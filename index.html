@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#14213d">
+<title>Carte da vendere</title>
+<style>
+:root{--bg:#eef2f6;--ink:#14213d;--mut:#5b6b82;--card:#fff;--line:#d3dbe6;--acc:#d62839}
+@media(prefers-color-scheme:dark){:root{--bg:#0f1626;--ink:#e8edf5;--mut:#93a2ba;--card:#18233a;--line:#2a3854}}
+*{box-sizing:border-box}
+body{margin:0;padding:16px;max-width:720px;margin-inline:auto;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,sans-serif}
+h1{font-size:1.5rem;margin:0 0 12px}h2{font-size:1.1rem;margin:24px 0 8px}
+button,.btn,input,select{font:inherit;color:inherit;border:1px solid var(--line);border-radius:8px;padding:9px 12px;background:var(--card)}
+button,.btn{cursor:pointer}.pri{background:var(--acc);border-color:var(--acc);color:#fff;display:block;text-align:center}
+button:focus-visible,.btn:focus-within,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.row{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap}.row input{flex:1;min-width:120px}
+#st{color:var(--mut);min-height:1.4em}
+.c{display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px;margin:6px 0}
+.c img{width:56px;border-radius:4px}.c div{flex:1}.m{color:var(--mut);font-size:.85rem}
+table{width:100%;border-collapse:collapse;background:var(--card)}
+td,th{padding:6px;border-bottom:1px solid var(--line);text-align:left;font-size:.9rem}
+td input,td select{padding:4px;width:100%}td input{width:80px}
+@media print{body{background:#fff;color:#000}.no{display:none}td input,td select{border:0;appearance:none;padding:0}}
+</style>
+</head>
+<body>
+<h1>Carte da vendere</h1>
+<div class="no">
+  <label class="btn pri">📷 Scatta o scegli una foto<input id="f" type="file" accept="image/*" capture="environment" hidden></label>
+  <p id="st" role="status">Inquadra la carta con il numero in basso ben leggibile (es. 025/165).</p>
+  <div class="row">
+    <input id="n" placeholder="Nome (inglese, opzionale)">
+    <input id="num" placeholder="Numero es. 025/165">
+    <button id="go">Cerca</button>
+  </div>
+  <div id="res"></div>
+</div>
+
+<h2>La mia lista <span id="tot" class="m"></span></h2>
+<table><thead><tr><th>Carta</th><th>Cond.</th><th>Mercato</th><th>Vendo a</th><th class="no"></th></tr></thead><tbody id="list"></tbody></table>
+<div class="row no">
+  <button id="csv">Scarica CSV</button>
+  <button id="pdf">Salva PDF</button>
+  <button id="clr">Svuota</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const eur=v=>v==null?'—':Number(v).toFixed(2)+' €';
+let L=[],R=[];
+try{L=JSON.parse(localStorage.getItem('carte')||'[]')}catch(e){}
+const save=()=>{try{localStorage.setItem('carte',JSON.stringify(L))}catch(e){}draw()};
+
+$('f').onchange=async e=>{
+  const f=e.target.files[0];if(!f)return;
+  $('st').textContent='Leggo la carta… (la prima volta scarica il modello OCR)';
+  try{
+    const {data:{text}}=await Tesseract.recognize(f,'eng');
+    const m=text.match(/(\d{1,3})\s*\/\s*(\d{2,3})/);
+    const name=text.split('\n').map(s=>s.replace(/[^A-Za-z' -]/g,'').trim()).find(s=>s.length>2)||'';
+    $('n').value=name;
+    if(m){$('num').value=m[1]+'/'+m[2];$('st').textContent='Letto '+m[0]+'. Cerco i prezzi…';search()}
+    else $('st').textContent='Numero non letto. Scrivilo a mano e premi Cerca.';
+  }catch(err){$('st').textContent='Lettura fallita: '+err.message}
+};
+
+async function search(){
+  const n=$('n').value.trim(),m=$('num').value.match(/(\d+)\s*\/\s*(\d+)/);
+  const q=m?`number:${+m[1]} set.printedTotal:${+m[2]}`:(n?`name:"${n}"`:'');
+  if(!q){$('st').textContent='Inserisci numero o nome.';return}
+  $('res').textContent='Cerco…';
+  try{
+    const r=await fetch('https://api.pokemontcg.io/v2/cards?pageSize=12&q='+encodeURIComponent(q));
+    R=(await r.json()).data||[];
+    $('res').innerHTML=R.length?'':'<p class="m">Nessun risultato. Prova con il solo nome.</p>';
+    R.forEach((c,i)=>{
+      const p=c.cardmarket?.prices?.trendPrice??null,d=document.createElement('div');d.className='c';
+      d.innerHTML=`<img src="${c.images.small}" alt=""><div><b>${c.name}</b><div class="m">${c.set.name} · ${c.number}/${c.set.printedTotal}</div><div>${eur(p)}</div></div><button>Aggiungi</button>`;
+      d.querySelector('button').onclick=()=>{L.push({n:c.name,s:c.set.name,num:c.number+'/'+c.set.printedTotal,c:'NM',p,v:p});save();$('st').textContent=c.name+' aggiunta.'};
+      $('res').append(d);
+    });
+  }catch(err){$('res').textContent='Errore di rete: '+err.message}
+}
+$('go').onclick=search;
+
+function draw(){
+  $('list').innerHTML='';
+  L.forEach((c,i)=>{
+    const t=document.createElement('tr');
+    t.innerHTML=`<td>${c.n}<div class="m">${c.s} ${c.num}</div></td>
+    <td><select>${['M','NM','LP','MP','HP'].map(x=>`<option${x==c.c?' selected':''}>${x}</option>`).join('')}</select></td>
+    <td>${eur(c.p)}</td><td><input type="number" step="0.1" value="${c.v??''}"></td><td class="no"><button aria-label="Rimuovi">✕</button></td>`;
+    t.querySelector('select').onchange=e=>{c.c=e.target.value;save()};
+    t.querySelector('input').onchange=e=>{c.v=e.target.value===''?null:+e.target.value;save()};
+    t.querySelector('button').onclick=()=>{L.splice(i,1);save()};
+    $('list').append(t);
+  });
+  $('tot').textContent=L.length?`${L.length} carte · totale ${eur(L.reduce((a,c)=>a+(c.v||0),0))}`:'(vuota)';
+}
+$('csv').onclick=()=>{
+  const rows=[['Nome','Set','Numero','Condizione','Mercato EUR','Prezzo vendita EUR'],...L.map(c=>[c.n,c.s,c.num,c.c,c.p??'',c.v??''])];
+  const csv=rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(';')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download='carte.csv';a.click();
+};
+$('pdf').onclick=()=>print();
+$('clr').onclick=()=>{if(confirm('Svuotare la lista?')){L=[];save()}};
+draw();
+</script>
+</body>
+</html>
