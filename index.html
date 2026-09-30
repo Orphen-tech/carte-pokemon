@@ -16,6 +16,10 @@ button,.btn{cursor:pointer}.pri{background:var(--acc);border-color:var(--acc);co
 button:focus-visible,.btn:focus-within,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .row{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap}.row input{flex:1;min-width:120px}
 #st{color:var(--mut);min-height:1.4em}
+#cam{position:relative;margin-top:8px;min-height:240px;background:#000;border-radius:8px;overflow:hidden}
+#cam[hidden]{display:none}
+#v{width:100%;height:auto;display:block}
+#g{position:absolute;left:0;right:0;top:78%;bottom:0;border-top:3px solid var(--acc);background:rgba(214,40,57,.12)}
 .c{display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px;margin:6px 0}
 .c img{width:56px;border-radius:4px}.c div{flex:1}.m{color:var(--mut);font-size:.85rem}
 table{width:100%;border-collapse:collapse;background:var(--card)}
@@ -27,10 +31,10 @@ td input,td select{padding:4px;width:100%}td input{width:80px}
 <body>
 <h1>Carte da vendere</h1>
 <div class="no">
-  <label class="btn pri">📷 Scatta o scegli una foto<input id="f" type="file" accept="image/*" capture="environment" hidden></label>
-  <button id="live" class="pri" style="width:100%;margin-top:8px">🎥 Scansione automatica</button>
-  <div id="cam" hidden style="position:relative;margin-top:8px"><video id="v" autoplay playsinline muted style="width:100%;min-height:220px;background:#000;border-radius:8px;display:block"></video><div style="position:absolute;left:0;right:0;bottom:0;height:25%;border:2px solid var(--acc);border-radius:0 0 8px 8px"></div></div>
-  <p id="st" role="status">Inquadra la carta con il numero in basso ben leggibile (es. 025/165).</p>
+  <label class="btn pri">📷 Scatta una foto alla carta<input id="f" type="file" accept="image/*" capture="environment" hidden></label>
+  <button id="live" style="width:100%;margin-top:8px">🎥 Scansione automatica (sperimentale)</button>
+  <div id="cam" hidden><video id="v" autoplay playsinline muted></video><div id="g"></div></div>
+  <p id="st" role="status">Foto: inquadra tutta la carta, numero in basso ben leggibile (es. 025/165).</p>
   <div class="row">
     <input id="n" placeholder="Nome (inglese, opzionale)">
     <input id="num" placeholder="Numero es. 025/165">
@@ -55,19 +59,53 @@ let L=[],R=[];
 try{L=JSON.parse(localStorage.getItem('carte')||'[]')}catch(e){}
 const save=()=>{try{localStorage.setItem('carte',JSON.stringify(L))}catch(e){}draw()};
 
+/* ---------- OCR: solo cifre, angoli in basso, ingrandito e a contrasto ---------- */
+let W=null;
+async function reader(){
+  if(!W){
+    W=await Tesseract.createWorker('eng');
+    await W.setParameters({tessedit_char_whitelist:'0123456789/',tessedit_pageseg_mode:Tesseract.PSM.SPARSE_TEXT});
+  }
+  return W;
+}
+const BL=[0,.78,.5,.22],BR=[.5,.78,.5,.22],WL=[0,.6,.5,.4],WR=[.5,.6,.5,.4],ALL=[0,0,1,1];
+function prep(src,sw,sh,[fx,fy,fw,fh],inv){
+  const cw=sw*fw,ch=sh*fh,s=1000/cw,c=document.createElement('canvas');
+  c.width=Math.round(cw*s);c.height=Math.round(ch*s);
+  const x=c.getContext('2d',{willReadFrequently:true});
+  x.drawImage(src,sw*fx,sh*fy,cw,ch,0,0,c.width,c.height);
+  const d=x.getImageData(0,0,c.width,c.height),p=d.data;let lo=255,hi=0;
+  for(let i=0;i<p.length;i+=4){const g=.3*p[i]+.59*p[i+1]+.11*p[i+2];p[i]=g;if(g<lo)lo=g;if(g>hi)hi=g}
+  const k=255/Math.max(hi-lo,1);
+  for(let i=0;i<p.length;i+=4){let g=(p[i]-lo)*k;if(inv)g=255-g;p[i]=p[i+1]=p[i+2]=g}
+  x.putImageData(d,0,0);return c;
+}
+// inv: 0 normale, 1 invertito, 2 prova entrambi
+async function readNum(src,sw,sh,regions,inv){
+  const w=await reader();let t='';
+  for(const r of regions)for(const m of(inv===2?[0,1]:[inv])){
+    t=(await w.recognize(prep(src,sw,sh,r,m))).data.text;
+    const x=t.match(/(\d{1,3})\s*\/\s*(\d{2,3})/);
+    if(x)return{k:x[1]+'/'+x[2],t};
+  }
+  return{k:'',t};
+}
+const seen=t=>'(vedo: "'+t.replace(/\s+/g,' ').trim().slice(0,25)+'")';
+
+/* ---------- Foto ---------- */
 $('f').onchange=async e=>{
   const f=e.target.files[0];if(!f)return;
-  $('st').textContent='Leggo la carta… (la prima volta scarica il modello OCR)';
+  $('st').textContent='Leggo la carta… (la prima volta carica il lettore)';
   try{
-    const {data:{text}}=await Tesseract.recognize(f,'eng');
-    const m=text.match(/(\d{1,3})\s*\/\s*(\d{2,3})/);
-    const name=text.split('\n').map(s=>s.replace(/[^A-Za-z' -]/g,'').trim()).find(s=>s.length>2)||'';
-    $('n').value=name;
-    if(m){$('num').value=m[1]+'/'+m[2];$('st').textContent='Letto '+m[0]+'. Cerco i prezzi…';search()}
-    else $('st').textContent='Numero non letto. Scrivilo a mano e premi Cerca.';
+    const b=await createImageBitmap(f);
+    const r=await readNum(b,b.width,b.height,[BL,BR,WL,WR,ALL],2);
+    if(r.k){$('num').value=r.k;$('st').textContent='Letto '+r.k+'. Cerco i prezzi…';search()}
+    else $('st').textContent='Numero non letto '+seen(r.t)+'. Riprova più vicino o scrivilo a mano.';
   }catch(err){$('st').textContent='Lettura fallita: '+err.message}
+  e.target.value='';
 };
 
+/* ---------- Ricerca prezzi ---------- */
 async function search(){
   const n=$('n').value.trim(),m=$('num').value.match(/(\d+)\s*\/\s*(\d+)/);
   const q=m?`number:${+m[1]} set.printedTotal:${+m[2]}`:(n?`name:"${n}"`:'');
@@ -77,7 +115,7 @@ async function search(){
     const r=await fetch('https://api.pokemontcg.io/v2/cards?pageSize=12&q='+encodeURIComponent(q));
     R=(await r.json()).data||[];
     $('res').innerHTML=R.length?'':'<p class="m">Nessun risultato. Prova con il solo nome.</p>';
-    R.forEach((c,i)=>{
+    R.forEach(c=>{
       const p=c.cardmarket?.prices?.trendPrice??null,d=document.createElement('div');d.className='c';
       d.innerHTML=`<img src="${c.images.small}" alt=""><div><b>${c.name}</b><div class="m">${c.set.name} · ${c.number}/${c.set.printedTotal}</div><div>${eur(p)}</div></div><button>Aggiungi</button>`;
       d.querySelector('button').onclick=()=>{L.push({n:c.name,s:c.set.name,num:c.number+'/'+c.set.printedTotal,c:'NM',p,v:p});save();$('st').textContent=c.name+' aggiunta.'};
@@ -87,53 +125,42 @@ async function search(){
 }
 $('go').onclick=search;
 
-// Scansione automatica: worker riusato, solo cifre e "/", solo fascia bassa della carta
-let W=null,stream=null,timer=0,busy=false,last='',hold='',empty=0;
-async function worker(){
-  if(!W){
-    W=await Tesseract.createWorker('eng');
-    await W.setParameters({tessedit_char_whitelist:'0123456789/',tessedit_pageseg_mode:Tesseract.PSM.SPARSE_TEXT});
-  }
-  return W;
-}
+/* ---------- Scansione automatica ---------- */
+let stream=null,timer=0,busy=false,last='',hold='',empty=0,flip=0;
 function stop(){
   clearInterval(timer);
   if(stream)stream.getTracks().forEach(t=>t.stop());
-  stream=null;last=hold='';$('cam').hidden=true;$('live').textContent='🎥 Scansione automatica';
+  stream=null;last=hold='';$('cam').hidden=true;$('live').textContent='🎥 Scansione automatica (sperimentale)';
 }
 $('live').onclick=async()=>{
   if(stream){stop();return}
-  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280}}})}
+  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920}}})}
   catch(e){$('st').textContent='Fotocamera non disponibile: '+e.message;return}
   const v=$('v');$('cam').hidden=false;$('live').textContent='⏹ Ferma scansione';
   v.muted=true;v.srcObject=stream;
   try{await v.play()}catch(e){}
   await new Promise(r=>{if(v.videoWidth)r();else{v.addEventListener('loadedmetadata',r,{once:true});setTimeout(r,4000)}});
-  if(!v.videoWidth){$('st').textContent='La fotocamera non invia immagini. Chiudi le altre app che la usano e riprova.';stop();return}
+  if(!v.videoWidth){$('st').textContent='La fotocamera non invia immagini. Usa il pulsante foto.';stop();return}
   $('st').textContent='Carico il lettore…';
-  let w;
-  try{w=await worker()}catch(e){$('st').textContent='Lettore OCR non caricato: '+e.message;stop();return}
-  $('st').textContent='Porta il numero della carta nel riquadro e tienila ferma.';
+  try{await reader()}catch(e){$('st').textContent='Lettore OCR non caricato: '+e.message;stop();return}
+  $('st').textContent='Porta il numero della carta nella fascia rossa e tienila ferma.';
   timer=setInterval(async()=>{
     if(busy||!stream||!v.videoWidth)return;busy=true;
     try{
-      const h=Math.round(v.videoHeight*.25),c=document.createElement('canvas');
-      c.width=v.videoWidth;c.height=h;
-      const x=c.getContext('2d');x.filter='grayscale(1) contrast(1.6)';
-      x.drawImage(v,0,v.videoHeight-h,v.videoWidth,h,0,0,c.width,h);
-      const raw=(await w.recognize(c)).data.text,m=raw.match(/(\d{1,3})\s*\/\s*(\d{2,3})/);
-      const k=m?m[1]+'/'+m[2]:'';
-      if(!k){if(++empty>=2){hold='';$('st').textContent='Numero non letto (vedo: "'+raw.replace(/\s+/g,' ').trim().slice(0,25)+'"). Avvicina la carta.'}}
+      flip^=1;
+      const r=await readNum(v,v.videoWidth,v.videoHeight,[BL,BR],flip);
+      if(!r.k){if(++empty>=3){hold='';$('st').textContent='Numero non letto '+seen(r.t)+'. Avvicina la carta.'}}
       else{
         empty=0;
-        if(k===last&&k!==hold){hold=k;navigator.vibrate&&navigator.vibrate(80);$('num').value=k;$('n').value='';$('st').textContent='Letto '+k+'. Cerco i prezzi… Cambia carta per la prossima.';search()}
-        last=k;
+        if(r.k===last&&r.k!==hold){hold=r.k;navigator.vibrate&&navigator.vibrate(80);$('num').value=r.k;$('n').value='';$('st').textContent='Letto '+r.k+'. Cerco i prezzi… Cambia carta per la prossima.';search()}
+        last=r.k;
       }
     }catch(e){}
     busy=false;
-  },500);
+  },400);
 };
 
+/* ---------- Lista ---------- */
 function draw(){
   $('list').innerHTML='';
   L.forEach((c,i)=>{
