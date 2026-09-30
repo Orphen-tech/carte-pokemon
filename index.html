@@ -3,71 +3,158 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#14213d">
-<title>Carte da vendere</title>
+<meta name="theme-color" content="#1a237e">
+<title>PokeVal : Scanner & Tracker Carte</title>
 <style>
-:root{--bg:#eef2f6;--ink:#14213d;--mut:#5b6b82;--card:#fff;--line:#d3dbe6;--acc:#d62839;--ok:#2a9d8f}
-@media(prefers-color-scheme:dark){:root{--bg:#0f1626;--ink:#e8edf5;--mut:#93a2ba;--card:#18233a;--line:#2a3854}}
-*{box-sizing:border-box}
-body{margin:0;padding:16px;max-width:720px;margin-inline:auto;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,sans-serif}
-h1{font-size:1.5rem;margin:0 0 12px}h2{font-size:1.1rem;margin:24px 0 8px}
-button,.btn,input,select{font:inherit;color:inherit;border:1px solid var(--line);border-radius:8px;padding:9px 12px;background:var(--card)}
-button,.btn{cursor:pointer}.pri{background:var(--acc);border-color:var(--acc);color:#fff;display:block;text-align:center}
-button:focus-visible,.btn:focus-within,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
-.row{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap}.row input{flex:1;min-width:120px}
-#st{color:var(--mut);min-height:1.4em;font-size:0.9rem;margin:6px 0}
-#cam{position:relative;margin-top:8px;min-height:240px;background:#000;border-radius:8px;overflow:hidden}
-#cam[hidden]{display:none}
-#v{width:100%;height:auto;display:block}
-#g{position:absolute;left:10%;right:10%;bottom:5%;height:25%;border:2px dashed var(--acc);background:rgba(214,40,57,.15);border-radius:6px;pointer-events:none}
-.c{display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px;margin:6px 0}
-.c img{width:56px;border-radius:4px}.c div{flex:1}.m{color:var(--mut);font-size:.85rem}
-table{width:100%;border-collapse:collapse;background:var(--card);border-radius:8px;overflow:hidden}
-td,th{padding:8px;border-bottom:1px solid var(--line);text-align:left;font-size:.9rem}
-td input,td select{padding:4px;width:100%}td input{width:80px}
-@media print{body{background:#fff;color:#000}.no{display:none}td input,td select{border:0;appearance:none;padding:0}}
+:root {
+  --bg: #0f172a;
+  --card: #1e293b;
+  --card-hover: #334155;
+  --ink: #f8fafc;
+  --mut: #94a3b8;
+  --line: #334155;
+  --acc: #ef4444;
+  --acc-hover: #dc2626;
+  --sec: #3b82f6;
+  --ok: #10b981;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body {
+  margin: 0; padding: 16px; max-width: 680px; margin-inline: auto;
+  background: var(--bg); color: var(--ink);
+  font: 15px/1.5 system-ui, -apple-system, sans-serif;
+}
+
+header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+h1 { font-size: 1.4rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px; }
+
+.card-panel {
+  background: var(--card); border: 1px solid var(--line); border-radius: 12px;
+  padding: 14px; margin-bottom: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+}
+
+button, .btn, input, select {
+  font: inherit; color: inherit; border: 1px solid var(--line);
+  border-radius: 8px; padding: 10px 14px; background: var(--card); transition: all .15s ease;
+}
+button, .btn { cursor: pointer; font-weight: 600; }
+button:active { transform: scale(0.98); }
+
+.pri { background: var(--acc); border-color: var(--acc); color: #fff; display: block; text-align: center; }
+.pri:hover { background: var(--acc-hover); }
+.sec { background: var(--sec); border-color: var(--sec); color: #fff; }
+
+.row { display: flex; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
+.row input { flex: 1; min-width: 120px; }
+
+#cam {
+  position: relative; margin-top: 10px; height: 260px;
+  background: #000; border-radius: 10px; overflow: hidden;
+}
+#v { width: 100%; height: 100%; object-fit: cover; }
+#overlay {
+  position: absolute; inset: 0; border: 2px solid rgba(255,255,255,0.2);
+  display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 15px;
+}
+#target-box {
+  width: 75%; height: 50px; border: 2px dashed var(--acc);
+  background: rgba(239, 68, 68, 0.2); border-radius: 6px; pointer-events: none;
+}
+
+#st { font-size: 0.85rem; color: var(--mut); margin: 6px 0; min-height: 1.4em; }
+
+.c-item {
+  display: flex; gap: 12px; align-items: center; background: var(--card);
+  border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin: 8px 0;
+}
+.c-item img { width: 54px; height: 75px; object-fit: contain; border-radius: 4px; background: #000; }
+.c-item .info { flex: 1; }
+.c-item .title { font-weight: 700; font-size: 0.95rem; }
+.badge { display: inline-block; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; background: var(--line); color: var(--mut); }
+
+.stats-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 16px; text-align: center;
+}
+.stat-val { font-size: 1.1rem; font-weight: 700; color: var(--ok); }
+.stat-lbl { font-size: 0.75rem; color: var(--mut); }
+
+table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 10px; overflow: hidden; }
+td, th { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; font-size: 0.85rem; }
+td input, td select { padding: 4px 6px; width: 100%; font-size: 0.85rem; }
+td input[type="number"] { width: 75px; }
+
+@media print { body { background: #fff; color: #000; } .no { display: none !important; } }
 </style>
 </head>
 <body>
-<h1>Carte da vendere</h1>
+
+<header>
+  <h1>🎴 PokeVal</h1>
+  <span id="pwa-status" class="badge">Scanner Carte</span>
+</header>
+
 <div class="no">
-  <label class="btn pri">📷 Scatta una foto alla carta<input id="f" type="file" accept="image/*" capture="environment" hidden></label>
-  <button id="live" style="width:100%;margin-top:8px">🎥 Scansione automatica</button>
-  <div id="cam" hidden>
-    <video id="v" autoplay playsinline muted></video>
-    <div id="g"></div>
+  <div class="card-panel">
+    <label class="btn pri">📷 Scatta / Carica Foto
+      <input id="f" type="file" accept="image/*" capture="environment" hidden>
+    </label>
+    <button id="live" class="sec" style="width:100%; margin-top:8px">🎥 Scansione Live</button>
+
+    <div id="cam" hidden>
+      <video id="v" autoplay playsinline muted></video>
+      <div id="overlay">
+        <div id="target-box"></div>
+      </div>
+    </div>
+
+    <p id="st">Inquadra il numero in basso a sinistra/destra della carta (es. 025/165).</p>
+
+    <div class="row">
+      <input id="n" placeholder="Nome carta (Inglese)">
+      <input id="num" placeholder="Numero es. 025/165">
+      <button id="go" class="pri">Cerca</button>
+    </div>
   </div>
-  <p id="st" role="status">Posiziona il numero (es. 025/165) nella casella rossa durante la scansione.</p>
-  <div class="row">
-    <input id="n" placeholder="Nome (inglese, opzionale)">
-    <input id="num" placeholder="Numero es. 025/165">
-    <button id="go">Cerca</button>
-  </div>
+
   <div id="res"></div>
 </div>
 
-<h2>La mia lista <span id="tot" class="m"></span></h2>
-<table><thead><tr><th>Carta</th><th>Cond.</th><th>Mercato</th><th>Vendo a</th><th class="no"></th></tr></thead><tbody id="list"></tbody></table>
-<div class="row no" style="margin-top:12px">
-  <button id="csv">Scarica CSV</button>
-  <button id="pdf">Salva PDF</button>
-  <button id="clr">Svuota</button>
+<div class="stats-grid">
+  <div><div id="st-qty" class="stat-val">0</div><div class="stat-lbl">Carte</div></div>
+  <div><div id="st-mkt" class="stat-val">0.00 €</div><div class="stat-lbl">Valore Mercato</div></div>
+  <div><div id="st-tot" class="stat-val">0.00 €</div><div class="stat-lbl">Totale Vendita</div></div>
+</div>
+
+<h2>La Mia Collezione</h2>
+<table>
+  <thead>
+    <tr><th>Carta</th><th>Cond.</th><th>Mercato</th><th>Prezzo</th><th class="no"></th></tr>
+  </thead>
+  <tbody id="list"></tbody>
+</table>
+
+<div class="row no" style="margin-top:16px">
+  <button id="csv">Esporta CSV</button>
+  <button id="pdf">Stampa PDF</button>
+  <button id="clr" style="margin-left:auto; border-color:var(--acc); color:var(--acc)">Svuota</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <script>
 const $=id=>document.getElementById(id);
-const eur=v=>v==null?'—':Number(v).toFixed(2)+' €';
-let L=[],R=[];
-try{L=JSON.parse(localStorage.getItem('carte')||'[]')}catch(e){}
-const save=()=>{try{localStorage.setItem('carte',JSON.stringify(L))}catch(e){}draw()};
+const eur=v=>v==null||isNaN(v)?'—':Number(v).toFixed(2)+' €';
+let L=[];
+try{L=JSON.parse(localStorage.getItem('pkm_collection')||'[]')}catch(e){}
+const save=()=>{try{localStorage.setItem('pkm_collection',JSON.stringify(L))}catch(e){}draw()};
 
-// Inserisci qui la tua chiave API se desideri usare l'AI in background
-const AI_API_KEY = "LA_TUA_CHIAVE_API_QUI";
+// API Key per AI se disponibile nel codice (opzionale)
+const AI_API_KEY = ""; 
 
-/* ---------- OCR: Ottimizzato con Binarizzazione di Otsu ---------- */
+/* ---------- OCR / Processamento Immagine ---------- */
 let W=null;
-async function reader(){
+async function getWorker(){
   if(!W){
     W=await Tesseract.createWorker('eng');
     await W.setParameters({
@@ -78,225 +165,208 @@ async function reader(){
   return W;
 }
 
-function otsuThreshold(ctx, w, h) {
+function otsuBinarize(ctx, w, h) {
   const imgData = ctx.getImageData(0, 0, w, h);
   const data = imgData.data;
-  const histogram = new Array(256).fill(0);
-  
+  const hist = new Array(256).fill(0);
   for (let i = 0; i < data.length; i += 4) {
-    const avg = Math.round(0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2]);
-    data[i] = data[i+1] = data[i+2] = avg;
-    histogram[avg]++;
+    const g = Math.round(0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2]);
+    data[i] = data[i+1] = data[i+2] = g;
+    hist[g]++;
   }
-
-  const total = w * h;
-  let sum = 0;
-  for (let t = 0; t < 256; t++) sum += t * histogram[t];
-
-  let sumB = 0, wB = 0, wF = 0, varMax = 0, threshold = 128;
+  let sum = 0; for (let t = 0; t < 256; t++) sum += t * hist[t];
+  let sumB = 0, wB = 0, wF = 0, varMax = 0, thresh = 128, total = w * h;
   for (let t = 0; t < 256; t++) {
-    wB += histogram[t];
-    if (wB === 0) continue;
-    wF = total - wB;
-    if (wF === 0) break;
-    sumB += t * histogram[t];
-    const mB = sumB / wB;
-    const mF = (sum - sumB) / wF;
-    const varBetween = wB * wF * Math.pow(mB - mF, 2);
-    if (varBetween > varMax) {
-      varMax = varBetween;
-      threshold = t;
-    }
+    wB += hist[t]; if (wB === 0) continue;
+    wF = total - wB; if (wF === 0) break;
+    sumB += t * hist[t];
+    const mB = sumB / wB, mF = (sum - sumB) / wF;
+    const v = wB * wF * Math.pow(mB - mF, 2);
+    if (v > varMax) { varMax = v; thresh = t; }
   }
-
   for (let i = 0; i < data.length; i += 4) {
-    const val = data[i] >= threshold ? 255 : 0;
+    const val = data[i] >= thresh ? 255 : 0;
     data[i] = data[i+1] = data[i+2] = val;
   }
   ctx.putImageData(imgData, 0, 0);
 }
 
-function prep(src, sw, sh, [fx, fy, fw, fh]) {
-  const cw = sw * fw, ch = sh * fh;
+function cropAndPrep(src, sw, sh) {
+  // Prende la fascia inferiore dove solitamente risiede il numero di serie
+  const cw = sw * 0.8, ch = sh * 0.25;
   const scale = Math.max(2, 300 / ch);
   const c = document.createElement('canvas');
-  c.width = Math.round(cw * scale);
-  c.height = Math.round(ch * scale);
+  c.width = Math.round(cw * scale); c.height = Math.round(ch * scale);
   const x = c.getContext('2d', {willReadFrequently: true});
   x.imageSmoothingEnabled = false;
-  x.drawImage(src, sw * fx, sh * fy, cw, ch, 0, 0, c.width, c.height);
-  otsuThreshold(x, c.width, c.height);
+  x.drawImage(src, sw * 0.1, sh * 0.70, cw, ch, 0, 0, c.width, c.height);
+  otsuBinarize(x, c.width, c.height);
   return c;
 }
 
 async function readNum(src, sw, sh) {
-  const w = await reader();
-  const region = [0.1, 0.70, 0.8, 0.25];
-  const processedCanvas = prep(src, sw, sh, region);
-  const res = await w.recognize(processedCanvas);
-  const text = res.data.text.replace(/\s+/g, '');
-  const match = text.match(/(\d{1,3})\/(\d{2,3})/);
-  return { k: match ? `${match[1]}/${match[2]}` : '', t: text };
+  const w = await getWorker();
+  const cvs = cropAndPrep(src, sw, sh);
+  const res = await w.recognize(cvs);
+  const clean = res.data.text.replace(/\s+/g, '');
+  const match = clean.match(/(\d{1,3})\/(\d{2,3})/);
+  return { k: match ? `${match[1]}/${match[2]}` : '', t: clean };
 }
 
-/* ---------- Lettura AI (Claude Vision) ---------- */
-async function readAI(b){
-  if (!AI_API_KEY || AI_API_KEY === "LA_TUA_CHIAVE_API_QUI") throw new Error("Chiave non configurata");
-  const s=Math.min(1,1024/Math.max(b.width,b.height)),c=document.createElement('canvas');
-  c.width=Math.round(b.width*s);c.height=Math.round(b.height*s);
-  c.getContext('2d').drawImage(b,0,0,c.width,c.height);
-  const data=c.toDataURL('image/jpeg',.8).split(',')[1];
-  const r=await fetch('https://api.anthropic.com/v1/messages',{
-    method:'POST',
-    headers:{
-      'content-type':'application/json',
-      'x-api-key': AI_API_KEY,
-      'anthropic-version':'2023-06-01',
-      'anthropic-dangerous-direct-browser-access':'true'
-    },
-    body:JSON.stringify({
-      model:'claude-3-5-haiku-20241022',
-      max_tokens:150,
-      messages:[{role:'user',content:[
-        {type:'image',source:{type:'base64',media_type:'image/jpeg',data}},
-        {type:'text',text:'Riconosci questa carta Pokémon. Rispondi ESCLUSIVAMENTE in formato JSON senza markdown: {"name":"nome inglese","number":"numero","total":"totale set"}'}
-      ]}]
-    })
-  });
-  const j=await r.json();if(!r.ok)throw new Error(j.error?.message||r.status);
-  const rawText = j.content[0].text.trim();
-  const o=JSON.parse(rawText.replace(/```json|```/g,''));
-  if(o.name)$('n').value=o.name;
-  return{k:o.number&&o.total?`${o.number}/${o.total}`:'',t:o.name||''};
-}
-
-/* ---------- Foto ---------- */
+/* ---------- Gestione Scatto Foto ---------- */
 $('f').onchange = async e => {
-  const f = e.target.files[0]; if (!f) return;
-  $('st').textContent = 'Analisi della carta in corso…';
+  const file = e.target.files[0]; if (!file) return;
+  $('st').textContent = 'Analisi immagine in corso…';
   try {
-    const b = await createImageBitmap(f);
-    let r = null;
-    
-    // Tenta prima con l'AI se configurata, altrimenti usa l'OCR locale
-    try { 
-      r = await readAI(b); 
-    } catch (err) { 
-      r = await readNum(b, b.width, b.height); 
-    }
-
-    if (r && (r.k || r.t)) {
-      if (r.k) $('num').value = r.k;
-      $('st').textContent = 'Carta individuata: ' + (r.k || r.t);
+    const bmp = await createImageBitmap(file);
+    const r = await readNum(bmp, bmp.width, bmp.height);
+    if (r.k) {
+      $('num').value = r.k;
+      $('st').textContent = 'Numero letto: ' + r.k;
       search();
     } else {
-      $('st').textContent = 'Numero non letto chiaramente. Inseriscilo manualmente.';
+      $('st').textContent = 'Lettura automatica incerta. Verifica il numero inserito.';
     }
-  } catch (err) { $('st').textContent = 'Errore di lettura: ' + err.message; }
+  } catch (err) { $('st').textContent = 'Errore durante l\'analisi: ' + err.message; }
   e.target.value = '';
 };
 
-/* ---------- Ricerca Prezzi (TCGdex) ---------- */
-let SETS=null;
-async function getJSON(u){try{const r=await fetch(u);return r.ok?await r.json():null}catch(e){return null}}
+/* ---------- Ricerca TCGdex API ---------- */
+let SETS = null;
+async function fetchJSON(u){try{const r=await fetch(u);return r.ok?await r.json():null}catch(e){return null}}
+
 async function search(){
-  const n=$('n').value.trim(),m=$('num').value.match(/(\d+)\s*\/\s*(\d+)/);
-  if(!m&&!n){$('st').textContent='Inserisci un numero di carta valido o un nome.';return}$('res').textContent='Ricerca su TCGdex…';
-  const B='https://api.tcgdex.net/v2/en/';
-  try{
-    let cards=[];
-    if(m){
-      if(!SETS)SETS=await getJSON(B+'sets')||[];
+  const name = $('n').value.trim();
+  const m = $('num').value.match(/(\d+)\s*\/\s*(\d+)/);
+  if (!m && !name) { $('st').textContent = 'Inserisci un nome o un numero valido.'; return; }$('res').textContent = 'Ricerca nel database Pokémon…';
+  const BASE = 'https://api.tcgdex.net/v2/en/';
+  
+  try {
+    let cards = [];
+    if (m) {
+      if (!SETS) SETS = await fetchJSON(BASE + 'sets') || [];
       const cardNum = +m[1], totalNum = +m[2];
-      const matchingSets=SETS.filter(x=>x.cardCount&&(x.cardCount.official===totalNum || x.cardCount.total===totalNum));
-      cards=(await Promise.all(matchingSets.map(async x=>{
-        for(const id of [String(cardNum).padStart(3,'0'), String(cardNum)]){
-          const c=await getJSON(B+'cards/'+x.id+'-'+id);if(c)return c;
+      const matchingSets = SETS.filter(s => s.cardCount && (s.cardCount.official === totalNum || s.cardCount.total === totalNum));
+      cards = (await Promise.all(matchingSets.map(async s => {
+        for (const id of [String(cardNum).padStart(3, '0'), String(cardNum)]) {
+          const c = await fetchJSON(BASE + 'cards/' + s.id + '-' + id);
+          if (c) return c;
         }
         return null;
       }))).filter(Boolean);
-    }else{
-      const l=await getJSON(B+'cards?name='+encodeURIComponent(n)+'&pagination:page=1&pagination:itemsPerPage=12')||[];
-      cards=(await Promise.all(l.map(c=>getJSON(B+'cards/'+c.id)))).filter(Boolean);
+    } else {
+      const list = await fetchJSON(BASE + 'cards?name=' + encodeURIComponent(name) + '&pagination:page=1&pagination:itemsPerPage=10') || [];
+      cards = (await Promise.all(list.map(c => fetchJSON(BASE + 'cards/' + c.id)))).filter(Boolean);
     }
-    
-    $('res').innerHTML=cards.length?'':'<p class="m">Nessuna carta trovata. Verificare il numero o cercare per nome in inglese.</p>';
-    cards.forEach(c=>{
-      const cm=(c.pricing&&c.pricing.cardmarket)||{},p=cm.trend??cm['trend-holo']??null,h=cm['trend-holo'];
-      const tot=c.set&&c.set.cardCount?c.set.cardCount.official:'?';
-      const d=document.createElement('div');d.className='c';
-      d.innerHTML=`<img src="${c.image?c.image+'/low.webp':''}" alt=""><div><b>${c.name}</b><div class="m">${c.set?c.set.name:''} · ${c.localId}/${tot}</div><div>${eur(p)}${h!=null&&cm.trend!=null?' · holo '+eur(h):''}</div></div><button>Aggiungi</button>`;
-      d.querySelector('button').onclick=()=>{
-        L.push({n:c.name,s:c.set?c.set.name:'',num:c.localId+'/'+tot,c:'NM',p,v:p});
-        save();
-        $('st').textContent=c.name+' aggiunta alla lista.';
-      };
-      $('res').append(d);
-    });
-  }catch(err){$('res').textContent='Errore durante il recupero dei dati: '+err.message}
-}
-$('go').onclick=search;
 
-/* ---------- Scansione Automatica con Fotocamera ---------- */
-let stream=null,timer=0,busy=false,last='';
-function stop(){
-  clearInterval(timer);
-  if(stream)stream.getTracks().forEach(t=>t.stop());
-  stream=null;last='';$('cam').hidden=true;$('live').textContent='🎥 Scansione automatica';
-}
-$('live').onclick=async()=>{
-  if(stream){stop();return}
-  try{
-    stream=await navigator.mediaDevices.getUserMedia({
-      video:{facingMode:'environment',width:{ideal:1920},focusMode:{ideal:'continuous'}}
+    $('res').innerHTML = cards.length ? '' : '<p class="stat-lbl">Nessuna carta trovata. Prova a cercare inserendo solo il nome in inglese.</p>';
+    
+    cards.forEach(c => {
+      const cm = (c.pricing && c.pricing.cardmarket) || {};
+      const price = cm.trend ?? cm['trend-holo'] ?? 0;
+      const setTotal = c.set && c.set.cardCount ? c.set.cardCount.official : '?';
+      
+      const el = document.createElement('div');
+      el.className = 'c-item';
+      el.innerHTML = `
+        <img src="${c.image ? c.image + '/low.webp' : ''}" alt="${c.name}">
+        <div class="info">
+          <div class="title">${c.name}</div>
+          <span class="badge">${c.set ? c.set.name : ''} · ${c.localId}/${setTotal}</span>
+          <div style="margin-top:4px; font-weight:600; color:var(--ok)">Valore: ${eur(price)}</div>
+        </div>
+        <button class="pri">Aggiungi</button>
+      `;
+      el.querySelector('button').onclick = () => {
+        L.push({ name: c.name, set: c.set ? c.set.name : '', num: c.localId + '/' + setTotal, cond: 'NM', mkt: price, val: price });
+        save();
+        $('st').textContent = c.name + ' aggiunta alla collezione!';
+      };
+      $('res').append(el);
     });
-  }catch(e){$('st').textContent='Impossibile accedere alla fotocamera: '+e.message;return}
+  } catch (err) { $('res').textContent = 'Errore di connessione: ' + err.message; }
+}
+$('go').onclick = search;
+
+/* ---------- Scansione Video Live ---------- */
+let stream = null, timer = 0, busy = false, lastRead = '';
+function stopLive(){
+  clearInterval(timer);
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  stream = null; lastRead = ''; $('cam').hidden = true; $('live').textContent = '🎥 Scansione Live';
+}
+
+$('live').onclick = async () => {
+  if (stream) { stopLive(); return; }
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1280 } }
+    });
+  } catch (e) { $('st').textContent = 'Fotocamera non disponibile: ' + e.message; return; }
   
-  const v=$('v');$('cam').hidden=false;$('live').textContent='⏹ Ferma scansione';
-  v.srcObject=stream;
-  await v.play();
+  const v = $('v'); $('cam').hidden = false; $('live').textContent = '⏹ Interrompi';
+  v.srcObject = stream; await v.play();
   
-  $('st').textContent='Inquadra il numero della carta dentro il rettangolo rosso.';
-  try{await reader()}catch(e){$('st').textContent='Impossibile avviare OCR: '+e.message;stop();return}
+  $('st').textContent = 'Posiziona il numero di carta nel rettangolo rosso.';
+  try { await getWorker(); } catch(e) { stopLive(); return; }
   
-  timer=setInterval(async()=>{
-    if(busy||!stream||!v.videoWidth)return;
-    busy=true;
-    try{
-      const r=await readNum(v,v.videoWidth,v.videoHeight);
-      if(r.k && r.k !== last){
-        last=r.k;
-        if(navigator.vibrate)navigator.vibrate(80);
-        $('num').value=r.k;
-        $('st').textContent='Trovato: '+r.k;
+  timer = setInterval(async () => {
+    if (busy || !stream || !v.videoWidth) return;
+    busy = true;
+    try {
+      const r = await readNum(v, v.videoWidth, v.videoHeight);
+      if (r.k && r.k !== lastRead) {
+        lastRead = r.k;
+        if (navigator.vibrate) navigator.vibrate(60);
+        $('num').value = r.k;
+        $('st').textContent = 'Letto: ' + r.k;
         search();
       }
-    }catch(e){}
-    busy=false;
-  },600);
+    } catch(e) {}
+    busy = false;
+  }, 700);
 };
 
-/* ---------- Gestione Lista ---------- */
-function draw(){
-  $('list').innerHTML='';
-  L.forEach((c,i)=>{
-    const t=document.createElement('tr');
-    t.innerHTML=`<td>${c.n}<div class="m">${c.s} ${c.num}</div></td>
-    <td><select>${['M','NM','LP','MP','HP'].map(x=>`<option${x==c.c?' selected':''}>${x}</option>`).join('')}</select></td>
-    <td>${eur(c.p)}</td><td><input type="number" step="0.1" value="${c.v??''}"></td><td class="no"><button aria-label="Rimuovi">✕</button></td>`;
-    t.querySelector('select').onchange=e=>{c.c=e.target.value;save()};
-    t.querySelector('input').onchange=e=>{c.v=e.target.value===''?null:+e.target.value;save()};
-    t.querySelector('button').onclick=()=>{L.splice(i,1);save()};
-    $('list').append(t);
+/* ---------- Render Lista e Statistiche ---------- */
+function draw() {
+  $('list').innerHTML = '';
+  let sumMkt = 0, sumVal = 0;
+  
+  L.forEach((c, i) => {
+    sumMkt += (c.mkt || 0);
+    sumVal += (c.val || 0);
+    
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><b>${c.name}</b><br><span class="badge">${c.set} ${c.num}</span></td>
+      <td>
+        <select>
+          ${['NM','EX','GD','PL','PO'].map(x => `<option ${x === c.cond ? 'selected' : ''}>${x}</option>`).join('')}
+        </select>
+      </td>
+      <td>${eur(c.mkt)}</td>
+      <td><input type="number" step="0.5" value="${c.val ?? ''}"></td>
+      <td class="no"><button style="padding:4px 8px; border-color:transparent">✕</button></td>
+    `;
+    tr.querySelector('select').onchange = e => { c.cond = e.target.value; save(); };
+    tr.querySelector('input').onchange = e => { c.val = e.target.value === '' ? null : +e.target.value; save(); };
+    tr.querySelector('button').onclick = () => { L.splice(i, 1); save(); };
+    $('list').append(tr);
   });
-  $('tot').textContent=L.length?`${L.length} carte · totale ${eur(L.reduce((a,c)=>a+(c.v||0),0))}`:'(vuota)';
+  
+  $('st-qty').textContent = L.length;
+  $('st-mkt').textContent = eur(sumMkt);$('st-tot').textContent = eur(sumVal);
 }
-$('csv').onclick=()=>{
-  const rows=[['Nome','Set','Numero','Condizione','Mercato EUR','Prezzo vendita EUR'],...L.map(c=>[c.n,c.s,c.num,c.c,c.p??'',c.v??''])];
-  const csv=rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(';')).join('\n');
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download='carte.csv';a.click();
+
+/* ---------- Export CSV & PDF ---------- */
+$('csv').onclick = () => {
+  const rows = [['Nome Carta', 'Set', 'Numero', 'Condizione', 'Prezzo Mercato', 'Prezzo Vendita'], ...L.map(c => [c.name, c.set, c.num, c.cond, c.mkt ?? '', c.val ?? ''])];
+  const csvStr = rows.map(r => r.map(x => `"${String(x).replace(/"/g, '""')}"`).join(';')).join('\n');
+  const blob = new Blob(['\ufeff' + csvStr], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a'); a.href = URL.URL.createObjectURL(blob); a.download = 'Collezione_Pokemon.csv'; a.click();
 };
-$('pdf').onclick=()=>print();$('clr').onclick=()=>{if(confirm('Svuotare la lista?')){L=[];save()}};
+$('pdf').onclick = () => print();$('clr').onclick = () => { if (confirm('Vuoi davvero cancellare tutta la collezione salvata?')) { L = []; save(); } };
+
 draw();
 </script>
 </body>
