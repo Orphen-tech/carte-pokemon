@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#14213d">
 <title>Carte da vendere</title>
 <style>
-:root{--bg:#eef2f6;--ink:#14213d;--mut:#5b6b82;--card:#fff;--line:#d3dbe6;--acc:#d62839}
+:root{--bg:#eef2f6;--ink:#14213d;--mut:#5b6b82;--card:#fff;--line:#d3dbe6;--acc:#d62839;--ok:#2a9d8f}
 @media(prefers-color-scheme:dark){:root{--bg:#0f1626;--ink:#e8edf5;--mut:#93a2ba;--card:#18233a;--line:#2a3854}}
 *{box-sizing:border-box}
 body{margin:0;padding:16px;max-width:720px;margin-inline:auto;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,sans-serif}
@@ -15,15 +15,15 @@ button,.btn,input,select{font:inherit;color:inherit;border:1px solid var(--line)
 button,.btn{cursor:pointer}.pri{background:var(--acc);border-color:var(--acc);color:#fff;display:block;text-align:center}
 button:focus-visible,.btn:focus-within,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
 .row{display:flex;gap:8px;margin:8px 0;flex-wrap:wrap}.row input{flex:1;min-width:120px}
-#st{color:var(--mut);min-height:1.4em}
+#st{color:var(--mut);min-height:1.4em;font-size:0.9rem;margin:6px 0}
 #cam{position:relative;margin-top:8px;min-height:240px;background:#000;border-radius:8px;overflow:hidden}
 #cam[hidden]{display:none}
 #v{width:100%;height:auto;display:block}
-#g{position:absolute;left:0;right:0;top:78%;bottom:0;border-top:3px solid var(--acc);background:rgba(214,40,57,.12)}
+#g{position:absolute;left:10%;right:10%;bottom:5%;height:25%;border:2px dashed var(--acc);background:rgba(214,40,57,.15);border-radius:6px;pointer-events:none}
 .c{display:flex;gap:10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px;margin:6px 0}
 .c img{width:56px;border-radius:4px}.c div{flex:1}.m{color:var(--mut);font-size:.85rem}
-table{width:100%;border-collapse:collapse;background:var(--card)}
-td,th{padding:6px;border-bottom:1px solid var(--line);text-align:left;font-size:.9rem}
+table{width:100%;border-collapse:collapse;background:var(--card);border-radius:8px;overflow:hidden}
+td,th{padding:8px;border-bottom:1px solid var(--line);text-align:left;font-size:.9rem}
 td input,td select{padding:4px;width:100%}td input{width:80px}
 @media print{body{background:#fff;color:#000}.no{display:none}td input,td select{border:0;appearance:none;padding:0}}
 </style>
@@ -32,9 +32,12 @@ td input,td select{padding:4px;width:100%}td input{width:80px}
 <h1>Carte da vendere</h1>
 <div class="no">
   <label class="btn pri">📷 Scatta una foto alla carta<input id="f" type="file" accept="image/*" capture="environment" hidden></label>
-  <button id="live" style="width:100%;margin-top:8px">🎥 Scansione automatica (sperimentale)</button>
-  <div id="cam" hidden><video id="v" autoplay playsinline muted></video><div id="g"></div></div>
-  <p id="st" role="status">Foto: inquadra tutta la carta, numero in basso ben leggibile (es. 025/165).</p>
+  <button id="live" style="width:100%;margin-top:8px">🎥 Scansione automatica</button>
+  <div id="cam" hidden>
+    <video id="v" autoplay playsinline muted></video>
+    <div id="g"></div>
+  </div>
+  <p id="st" role="status">Posiziona il numero (es. 025/165) nella casella rossa durante la scansione.</p>
   <div class="row">
     <input id="n" placeholder="Nome (inglese, opzionale)">
     <input id="num" placeholder="Numero es. 025/165">
@@ -45,7 +48,7 @@ td input,td select{padding:4px;width:100%}td input{width:80px}
 
 <h2>La mia lista <span id="tot" class="m"></span></h2>
 <table><thead><tr><th>Carta</th><th>Cond.</th><th>Mercato</th><th>Vendo a</th><th class="no"></th></tr></thead><tbody id="list"></tbody></table>
-<div class="row no">
+<div class="row no" style="margin-top:12px">
   <button id="csv">Scarica CSV</button>
   <button id="pdf">Salva PDF</button>
   <button id="clr">Svuota</button>
@@ -59,108 +62,221 @@ let L=[],R=[];
 try{L=JSON.parse(localStorage.getItem('carte')||'[]')}catch(e){}
 const save=()=>{try{localStorage.setItem('carte',JSON.stringify(L))}catch(e){}draw()};
 
-/* ---------- OCR: solo cifre, angoli in basso, ingrandito e a contrasto ---------- */
+// Inserisci qui la tua chiave API se desideri usare l'AI in background
+const AI_API_KEY = "LA_TUA_CHIAVE_API_QUI";
+
+/* ---------- OCR: Ottimizzato con Binarizzazione di Otsu ---------- */
 let W=null;
 async function reader(){
   if(!W){
     W=await Tesseract.createWorker('eng');
-    await W.setParameters({tessedit_char_whitelist:'0123456789/',tessedit_pageseg_mode:Tesseract.PSM.SPARSE_TEXT});
+    await W.setParameters({
+      tessedit_char_whitelist:'0123456789/',
+      tessedit_pageseg_mode:Tesseract.PSM.SINGLE_LINE
+    });
   }
   return W;
 }
-const BL=[0,.78,.5,.22],BR=[.5,.78,.5,.22],WL=[0,.6,.5,.4],WR=[.5,.6,.5,.4],ALL=[0,0,1,1];
-function prep(src,sw,sh,[fx,fy,fw,fh],inv){
-  const cw=sw*fw,ch=sh*fh,s=1000/cw,c=document.createElement('canvas');
-  c.width=Math.round(cw*s);c.height=Math.round(ch*s);
-  const x=c.getContext('2d',{willReadFrequently:true});
-  x.drawImage(src,sw*fx,sh*fy,cw,ch,0,0,c.width,c.height);
-  const d=x.getImageData(0,0,c.width,c.height),p=d.data;let lo=255,hi=0;
-  for(let i=0;i<p.length;i+=4){const g=.3*p[i]+.59*p[i+1]+.11*p[i+2];p[i]=g;if(g<lo)lo=g;if(g>hi)hi=g}
-  const k=255/Math.max(hi-lo,1);
-  for(let i=0;i<p.length;i+=4){let g=(p[i]-lo)*k;if(inv)g=255-g;p[i]=p[i+1]=p[i+2]=g}
-  x.putImageData(d,0,0);return c;
-}
-// inv: 0 normale, 1 invertito, 2 prova entrambi
-async function readNum(src,sw,sh,regions,inv){
-  const w=await reader();let t='';
-  for(const r of regions)for(const m of(inv===2?[0,1]:[inv])){
-    t=(await w.recognize(prep(src,sw,sh,r,m))).data.text;
-    const x=t.match(/(\d{1,3})\s*\/\s*(\d{2,3})/);
-    if(x)return{k:x[1]+'/'+x[2],t};
+
+function otsuThreshold(ctx, w, h) {
+  const imgData = ctx.getImageData(0, 0, w, h);
+  const data = imgData.data;
+  const histogram = new Array(256).fill(0);
+  
+  for (let i = 0; i < data.length; i += 4) {
+    const avg = Math.round(0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2]);
+    data[i] = data[i+1] = data[i+2] = avg;
+    histogram[avg]++;
   }
-  return{k:'',t};
+
+  const total = w * h;
+  let sum = 0;
+  for (let t = 0; t < 256; t++) sum += t * histogram[t];
+
+  let sumB = 0, wB = 0, wF = 0, varMax = 0, threshold = 128;
+  for (let t = 0; t < 256; t++) {
+    wB += histogram[t];
+    if (wB === 0) continue;
+    wF = total - wB;
+    if (wF === 0) break;
+    sumB += t * histogram[t];
+    const mB = sumB / wB;
+    const mF = (sum - sumB) / wF;
+    const varBetween = wB * wF * Math.pow(mB - mF, 2);
+    if (varBetween > varMax) {
+      varMax = varBetween;
+      threshold = t;
+    }
+  }
+
+  for (let i = 0; i < data.length; i += 4) {
+    const val = data[i] >= threshold ? 255 : 0;
+    data[i] = data[i+1] = data[i+2] = val;
+  }
+  ctx.putImageData(imgData, 0, 0);
 }
-const seen=t=>'(vedo: "'+t.replace(/\s+/g,' ').trim().slice(0,25)+'")';
+
+function prep(src, sw, sh, [fx, fy, fw, fh]) {
+  const cw = sw * fw, ch = sh * fh;
+  const scale = Math.max(2, 300 / ch);
+  const c = document.createElement('canvas');
+  c.width = Math.round(cw * scale);
+  c.height = Math.round(ch * scale);
+  const x = c.getContext('2d', {willReadFrequently: true});
+  x.imageSmoothingEnabled = false;
+  x.drawImage(src, sw * fx, sh * fy, cw, ch, 0, 0, c.width, c.height);
+  otsuThreshold(x, c.width, c.height);
+  return c;
+}
+
+async function readNum(src, sw, sh) {
+  const w = await reader();
+  const region = [0.1, 0.70, 0.8, 0.25];
+  const processedCanvas = prep(src, sw, sh, region);
+  const res = await w.recognize(processedCanvas);
+  const text = res.data.text.replace(/\s+/g, '');
+  const match = text.match(/(\d{1,3})\/(\d{2,3})/);
+  return { k: match ? `${match[1]}/${match[2]}` : '', t: text };
+}
+
+/* ---------- Lettura AI (Claude Vision) ---------- */
+async function readAI(b){
+  if (!AI_API_KEY || AI_API_KEY === "LA_TUA_CHIAVE_API_QUI") throw new Error("Chiave non configurata");
+  const s=Math.min(1,1024/Math.max(b.width,b.height)),c=document.createElement('canvas');
+  c.width=Math.round(b.width*s);c.height=Math.round(b.height*s);
+  c.getContext('2d').drawImage(b,0,0,c.width,c.height);
+  const data=c.toDataURL('image/jpeg',.8).split(',')[1];
+  const r=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{
+      'content-type':'application/json',
+      'x-api-key': AI_API_KEY,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body:JSON.stringify({
+      model:'claude-3-5-haiku-20241022',
+      max_tokens:150,
+      messages:[{role:'user',content:[
+        {type:'image',source:{type:'base64',media_type:'image/jpeg',data}},
+        {type:'text',text:'Riconosci questa carta Pokémon. Rispondi ESCLUSIVAMENTE in formato JSON senza markdown: {"name":"nome inglese","number":"numero","total":"totale set"}'}
+      ]}]
+    })
+  });
+  const j=await r.json();if(!r.ok)throw new Error(j.error?.message||r.status);
+  const rawText = j.content[0].text.trim();
+  const o=JSON.parse(rawText.replace(/```json|```/g,''));
+  if(o.name)$('n').value=o.name;
+  return{k:o.number&&o.total?`${o.number}/${o.total}`:'',t:o.name||''};
+}
 
 /* ---------- Foto ---------- */
-$('f').onchange=async e=>{
-  const f=e.target.files[0];if(!f)return;
-  $('st').textContent='Leggo la carta… (la prima volta carica il lettore)';
-  try{
-    const b=await createImageBitmap(f);
-    const r=await readNum(b,b.width,b.height,[BL,BR,WL,WR,ALL],2);
-    if(r.k){$('num').value=r.k;$('st').textContent='Letto '+r.k+'. Cerco i prezzi…';search()}
-    else $('st').textContent='Numero non letto '+seen(r.t)+'. Riprova più vicino o scrivilo a mano.';
-  }catch(err){$('st').textContent='Lettura fallita: '+err.message}
-  e.target.value='';
+$('f').onchange = async e => {
+  const f = e.target.files[0]; if (!f) return;
+  $('st').textContent = 'Analisi della carta in corso…';
+  try {
+    const b = await createImageBitmap(f);
+    let r = null;
+    
+    // Tenta prima con l'AI se configurata, altrimenti usa l'OCR locale
+    try { 
+      r = await readAI(b); 
+    } catch (err) { 
+      r = await readNum(b, b.width, b.height); 
+    }
+
+    if (r && (r.k || r.t)) {
+      if (r.k) $('num').value = r.k;
+      $('st').textContent = 'Carta individuata: ' + (r.k || r.t);
+      search();
+    } else {
+      $('st').textContent = 'Numero non letto chiaramente. Inseriscilo manualmente.';
+    }
+  } catch (err) { $('st').textContent = 'Errore di lettura: ' + err.message; }
+  e.target.value = '';
 };
 
-/* ---------- Ricerca prezzi ---------- */
+/* ---------- Ricerca Prezzi (TCGdex) ---------- */
+let SETS=null;
+async function getJSON(u){try{const r=await fetch(u);return r.ok?await r.json():null}catch(e){return null}}
 async function search(){
   const n=$('n').value.trim(),m=$('num').value.match(/(\d+)\s*\/\s*(\d+)/);
-  const q=m?`number:${+m[1]} set.printedTotal:${+m[2]}`:(n?`name:"${n}"`:'');
-  if(!q){$('st').textContent='Inserisci numero o nome.';return}
-  $('res').textContent='Cerco…';
+  if(!m&&!n){$('st').textContent='Inserisci un numero di carta valido o un nome.';return}$('res').textContent='Ricerca su TCGdex…';
+  const B='https://api.tcgdex.net/v2/en/';
   try{
-    const r=await fetch('https://api.pokemontcg.io/v2/cards?pageSize=12&q='+encodeURIComponent(q));
-    R=(await r.json()).data||[];
-    $('res').innerHTML=R.length?'':'<p class="m">Nessun risultato. Prova con il solo nome.</p>';
-    R.forEach(c=>{
-      const p=c.cardmarket?.prices?.trendPrice??null,d=document.createElement('div');d.className='c';
-      d.innerHTML=`<img src="${c.images.small}" alt=""><div><b>${c.name}</b><div class="m">${c.set.name} · ${c.number}/${c.set.printedTotal}</div><div>${eur(p)}</div></div><button>Aggiungi</button>`;
-      d.querySelector('button').onclick=()=>{L.push({n:c.name,s:c.set.name,num:c.number+'/'+c.set.printedTotal,c:'NM',p,v:p});save();$('st').textContent=c.name+' aggiunta.'};
+    let cards=[];
+    if(m){
+      if(!SETS)SETS=await getJSON(B+'sets')||[];
+      const cardNum = +m[1], totalNum = +m[2];
+      const matchingSets=SETS.filter(x=>x.cardCount&&(x.cardCount.official===totalNum || x.cardCount.total===totalNum));
+      cards=(await Promise.all(matchingSets.map(async x=>{
+        for(const id of [String(cardNum).padStart(3,'0'), String(cardNum)]){
+          const c=await getJSON(B+'cards/'+x.id+'-'+id);if(c)return c;
+        }
+        return null;
+      }))).filter(Boolean);
+    }else{
+      const l=await getJSON(B+'cards?name='+encodeURIComponent(n)+'&pagination:page=1&pagination:itemsPerPage=12')||[];
+      cards=(await Promise.all(l.map(c=>getJSON(B+'cards/'+c.id)))).filter(Boolean);
+    }
+    
+    $('res').innerHTML=cards.length?'':'<p class="m">Nessuna carta trovata. Verificare il numero o cercare per nome in inglese.</p>';
+    cards.forEach(c=>{
+      const cm=(c.pricing&&c.pricing.cardmarket)||{},p=cm.trend??cm['trend-holo']??null,h=cm['trend-holo'];
+      const tot=c.set&&c.set.cardCount?c.set.cardCount.official:'?';
+      const d=document.createElement('div');d.className='c';
+      d.innerHTML=`<img src="${c.image?c.image+'/low.webp':''}" alt=""><div><b>${c.name}</b><div class="m">${c.set?c.set.name:''} · ${c.localId}/${tot}</div><div>${eur(p)}${h!=null&&cm.trend!=null?' · holo '+eur(h):''}</div></div><button>Aggiungi</button>`;
+      d.querySelector('button').onclick=()=>{
+        L.push({n:c.name,s:c.set?c.set.name:'',num:c.localId+'/'+tot,c:'NM',p,v:p});
+        save();
+        $('st').textContent=c.name+' aggiunta alla lista.';
+      };
       $('res').append(d);
     });
-  }catch(err){$('res').textContent='Errore di rete: '+err.message}
+  }catch(err){$('res').textContent='Errore durante il recupero dei dati: '+err.message}
 }
 $('go').onclick=search;
 
-/* ---------- Scansione automatica ---------- */
-let stream=null,timer=0,busy=false,last='',hold='',empty=0,flip=0;
+/* ---------- Scansione Automatica con Fotocamera ---------- */
+let stream=null,timer=0,busy=false,last='';
 function stop(){
   clearInterval(timer);
   if(stream)stream.getTracks().forEach(t=>t.stop());
-  stream=null;last=hold='';$('cam').hidden=true;$('live').textContent='🎥 Scansione automatica (sperimentale)';
+  stream=null;last='';$('cam').hidden=true;$('live').textContent='🎥 Scansione automatica';
 }
 $('live').onclick=async()=>{
   if(stream){stop();return}
-  try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920}}})}
-  catch(e){$('st').textContent='Fotocamera non disponibile: '+e.message;return}
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({
+      video:{facingMode:'environment',width:{ideal:1920},focusMode:{ideal:'continuous'}}
+    });
+  }catch(e){$('st').textContent='Impossibile accedere alla fotocamera: '+e.message;return}
+  
   const v=$('v');$('cam').hidden=false;$('live').textContent='⏹ Ferma scansione';
-  v.muted=true;v.srcObject=stream;
-  try{await v.play()}catch(e){}
-  await new Promise(r=>{if(v.videoWidth)r();else{v.addEventListener('loadedmetadata',r,{once:true});setTimeout(r,4000)}});
-  if(!v.videoWidth){$('st').textContent='La fotocamera non invia immagini. Usa il pulsante foto.';stop();return}
-  $('st').textContent='Carico il lettore…';
-  try{await reader()}catch(e){$('st').textContent='Lettore OCR non caricato: '+e.message;stop();return}
-  $('st').textContent='Porta il numero della carta nella fascia rossa e tienila ferma.';
+  v.srcObject=stream;
+  await v.play();
+  
+  $('st').textContent='Inquadra il numero della carta dentro il rettangolo rosso.';
+  try{await reader()}catch(e){$('st').textContent='Impossibile avviare OCR: '+e.message;stop();return}
+  
   timer=setInterval(async()=>{
-    if(busy||!stream||!v.videoWidth)return;busy=true;
+    if(busy||!stream||!v.videoWidth)return;
+    busy=true;
     try{
-      flip^=1;
-      const r=await readNum(v,v.videoWidth,v.videoHeight,[BL,BR],flip);
-      if(!r.k){if(++empty>=3){hold='';$('st').textContent='Numero non letto '+seen(r.t)+'. Avvicina la carta.'}}
-      else{
-        empty=0;
-        if(r.k===last&&r.k!==hold){hold=r.k;navigator.vibrate&&navigator.vibrate(80);$('num').value=r.k;$('n').value='';$('st').textContent='Letto '+r.k+'. Cerco i prezzi… Cambia carta per la prossima.';search()}
+      const r=await readNum(v,v.videoWidth,v.videoHeight);
+      if(r.k && r.k !== last){
         last=r.k;
+        if(navigator.vibrate)navigator.vibrate(80);
+        $('num').value=r.k;
+        $('st').textContent='Trovato: '+r.k;
+        search();
       }
     }catch(e){}
     busy=false;
-  },400);
+  },600);
 };
 
-/* ---------- Lista ---------- */
+/* ---------- Gestione Lista ---------- */
 function draw(){
   $('list').innerHTML='';
   L.forEach((c,i)=>{
@@ -180,8 +296,7 @@ $('csv').onclick=()=>{
   const csv=rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(';')).join('\n');
   const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download='carte.csv';a.click();
 };
-$('pdf').onclick=()=>print();
-$('clr').onclick=()=>{if(confirm('Svuotare la lista?')){L=[];save()}};
+$('pdf').onclick=()=>print();$('clr').onclick=()=>{if(confirm('Svuotare la lista?')){L=[];save()}};
 draw();
 </script>
 </body>
