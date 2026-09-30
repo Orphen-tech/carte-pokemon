@@ -105,6 +105,18 @@ button:active {
   box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
 }
 
+.row {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.row input {
+  flex: 1;
+  min-width: 130px;
+}
+
 /* Riquadro del mirino della fotocamera */
 #camera-wrapper {
   position: relative; 
@@ -245,7 +257,7 @@ td input, td select {
   <span class="badge" style="border: 1px solid var(--color-success); color: var(--color-success)">TURBO STREAM</span>
 </header>
 
-<!-- PANNELLO DI SCANSIONE CONTINUA -->
+<!-- PANNELLO DI SCANSIONE CONTINUA E INSERIMENTO MANUALE -->
 <div class="content-box">
   <button id="btn-toggle-stream" class="btn-turbo" style="width:100%; font-size:1rem; padding:14px">
     ⚡ AVVIA MULTI-SCANSIONE CONTINUA
@@ -259,10 +271,16 @@ td input, td select {
     </div>
   </div>
 
-  <!-- Messaggio dinamico sullo stato dell'operazione -->
   <p id="status-message" style="margin-top:10px; font-size:0.85rem; color:var(--text-muted)">
-    Premi il pulsante sopra per avviare la scansione continua a catena di montaggio.
+    Usa la fotocamera in continuo oppure inserisci il numero o il nome qui sotto se non viene letta.
   </p>
+
+  <!-- BARRA DI INSERIMENTO MANUALE (Alternativa o supporto al multi-scatto) -->
+  <div class="row">
+    <input id="input-manual-name" placeholder="Nome (es. Pikachu, opzionale)">
+    <input id="input-manual-num" placeholder="Numero es. 025/165">
+    <button id="btn-manual-search" class="btn-secondary" style="min-width: 90px">Cerca</button>
+  </div>
 
   <!-- Anteprima rapida per le carte lette nella sessione corrente -->
   <div id="preview-feed" class="scan-feed"></div>
@@ -314,23 +332,17 @@ td input, td select {
    2. GESTIONE STATO LOCALE E FUNZIONI UTILITY
    ========================================================================== */
 
-// Utility per la selezione rapida degli elementi DOM dal loro ID
 const getEl = id => document.getElementById(id);
-
-// Formattatore per i valori monetari in Euro (€)
 const formatEuro = val => (val == null || isNaN(val)) ? '—' : Number(val).toFixed(2) + ' €';
 
-// Lista globale con la collezione delle carte salvate
 let collectionList = [];
 
-// Caricamento dei dati salvati in precedenza dal LocalStorage del browser
 try {
   collectionList = JSON.parse(localStorage.getItem('pokevault_turbo_db') || '[]');
 } catch (e) {
   console.warn("Impossibile caricare i dati salvati dal local storage", e);
 }
 
-// Salva la lista corrente nel LocalStorage e aggiorna la tabella a schermo
 const saveAndRefreshList = () => {
   try {
     localStorage.setItem('pokevault_turbo_db', JSON.stringify(collectionList));
@@ -344,7 +356,6 @@ const saveAndRefreshList = () => {
    3. FEEDBACK AUDIO (SUONO BEEP)
    ========================================================================== */
 
-// Crea un contesto audio per generare un "beep" di conferma senza caricare file MP3 esterni
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
 function playSuccessBeep() {
@@ -355,14 +366,12 @@ function playSuccessBeep() {
     oscillator.connect(gainNode);
     gainNode.connect(audioContext.destination);
     
-    oscillator.frequency.value = 880; // Frequenza della nota musicale La (880Hz)
-    gainNode.gain.value = 0.1;        // Imposta un volume moderato
+    oscillator.frequency.value = 880;
+    gainNode.gain.value = 0.1;
     
     oscillator.start();
-    oscillator.stop(audioContext.currentTime + 0.12); // Durata del segnale acustico: 120 millisecondi
-  } catch (e) {
-    // Ignora errori di riproduzione nel caso l'utente non abbia interagito con la pagina
-  }
+    oscillator.stop(audioContext.currentTime + 0.12);
+  } catch (e) {}
 }
 
 /* ==========================================================================
@@ -371,37 +380,28 @@ function playSuccessBeep() {
 
 let tesseractWorker = null;
 
-// Configurazione e caricamento del thread di riconoscimento testo (Tesseract Worker)
 async function getOCRWorker() {
   if (!tesseractWorker) {
     tesseractWorker = await Tesseract.createWorker('eng');
-    // Restringiamo i caratteri leggibili solo a cifre numeriche e al carattere della barra di frazione "/"
     await tesseractWorker.setParameters({
       tessedit_char_whitelist: '0123456789/',
-      tessedit_pageseg_mode: Tesseract.PSM.SINGLE_LINE // Ottimizzato per una singola riga di testo
+      tessedit_pageseg_mode: Tesseract.PSM.SINGLE_LINE
     });
   }
   return tesseractWorker;
 }
 
-/**
- * Algoritmo di Binarizzazione di Otsu
- * Converte un'immagine in Bianco e Nero puro ad alto contrasto per rimuovere 
- * i riflessi e i luccichii delle carte olografiche prima di passare il frame all'OCR.
- */
 function applyOtsuThresholding(context, width, height) {
   const imgData = context.getImageData(0, 0, width, height);
   const data = imgData.data;
   const histogram = new Array(256).fill(0);
 
-  // 1. Converti in scala di grigi e calcola l'istogramma dei toni
   for (let i = 0; i < data.length; i += 4) {
     const gray = Math.round(0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2]);
     data[i] = data[i+1] = data[i+2] = gray;
     histogram[gray]++;
   }
 
-  // 2. Trova la soglia di separazione ottimale (Soglia di Otsu)
   let sum = 0;
   for (let t = 0; t < 256; t++) sum += t * histogram[t];
 
@@ -426,7 +426,6 @@ function applyOtsuThresholding(context, width, height) {
     }
   }
 
-  // 3. Applica la soglia binaria: se > soglia diventa bianco puro, altrimenti nero
   for (let i = 0; i < data.length; i += 4) {
     const binaryValue = data[i] >= optimalThreshold ? 255 : 0;
     data[i] = data[i+1] = data[i+2] = binaryValue;
@@ -435,10 +434,6 @@ function applyOtsuThresholding(context, width, height) {
   context.putImageData(imgData, 0, 0);
 }
 
-/**
- * Ritaglia la porzione inferiore del video (dove risiede il numero di serie) 
- * ed esegue il pre-processing ad alto contrasto.
- */
 function cropLowerCardRegion(videoSource, sourceWidth, sourceHeight) {
   const cropHeight = sourceHeight * 0.28;
   const cropWidth = sourceWidth * 0.9;
@@ -448,17 +443,12 @@ function cropLowerCardRegion(videoSource, sourceWidth, sourceHeight) {
   canvas.height = Math.round(cropHeight);
   
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  // Estrai solo la banda inferiore della carta
   ctx.drawImage(videoSource, sourceWidth * 0.05, sourceHeight * 0.70, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
   
-  // Migliora il contrasto per la lettura dei caratteri
   applyOtsuThresholding(ctx, canvas.width, canvas.height);
   return canvas;
 }
 
-/**
- * Esegue la scansione ottica sull'area della carta e restituisce il codice riconosciuto (es. 025/165)
- */
 async function scanCardNumber(videoSource, sourceWidth, sourceHeight) {
   const worker = await getOCRWorker();
   const processedCanvas = cropLowerCardRegion(videoSource, sourceWidth, sourceHeight);
@@ -466,13 +456,12 @@ async function scanCardNumber(videoSource, sourceWidth, sourceHeight) {
   const recognitionResult = await worker.recognize(processedCanvas);
   const cleanText = recognitionResult.data.text.replace(/\s+/g, '');
   
-  // Trova il formato classico "NUMERO/TOTALE" (es. 025/165) tramite Espressione Regolare
   const match = cleanText.match(/(\d{1,3})\/(\d{2,3})/);
   return match ? `${match[1]}/${match[2]}` : '';
 }
 
 /* ==========================================================================
-   5. INTERROGAZIONE API DATABASE (TCGdex)
+   5. INTERROGAZIONE API DATABASE (TCGdex - Supporto Numero e Nome)
    ========================================================================== */
 
 let cachedSetDatabase = null;
@@ -487,63 +476,79 @@ async function fetchJSONData(url) {
 }
 
 /**
- * Cerca automaticamente la carta nel database TCGdex dal suo numero estratto via OCR
- * e la aggiunge direttamente alla collezione senza interrompere il flusso
+ * Cerca la carta sul database TCGdex gestendo sia la ricerca tramite numero (es. 025/165) 
+ * sia la ricerca testuale per nome.
  */
-async function fetchAndAddCardToCollection(cardNumberString) {
+async function searchAndAddCard(cardNumberString, cardNameString = '') {
   const API_BASE_URL = 'https://api.tcgdex.net/v2/en/';
-  const match = cardNumberString.match(/(\d+)\/(\d+)/);
-  if (!match) return;
+  const match = cardNumberString ? cardNumberString.match(/(\d+)\/(\d+)/) : null;
 
-  const cardLocalNumber = +match[1];
-  const setTotalCount = +match[2];
+  try {
+    let cardDetails = null;
 
-  // Scarica la lista dei set se non è già presente in memoria
-  if (!cachedSetDatabase) {
-    cachedSetDatabase = await fetchJSONData(API_BASE_URL + 'sets') || [];
-  }
+    if (match) {
+      const cardLocalNumber = +match[1];
+      const setTotalCount = +match[2];
 
-  // Filtra i set che corrispondono alla dimensione totale stampata sulla carta
-  const matchingSets = cachedSetDatabase.filter(set => 
-    set.cardCount && (set.cardCount.official === setTotalCount || set.cardCount.total === setTotalCount)
-  );
+      if (!cachedSetDatabase) {
+        cachedSetDatabase = await fetchJSONData(API_BASE_URL + 'sets') || [];
+      }
 
-  for (const setItem of matchingSets) {
-    // Prova il formato con zero-padding (es. "025") e semplice (es. "25")
-    for (const formattedId of [String(cardLocalNumber).padStart(3, '0'), String(cardLocalNumber)]) {
-      const cardDetails = await fetchJSONData(API_BASE_URL + 'cards/' + setItem.id + '-' + formattedId);
-      
-      if (cardDetails) {
-        const pricingInfo = (cardDetails.pricing && cardDetails.pricing.cardmarket) || {};
-        const marketPrice = pricingInfo.trend ?? pricingInfo['trend-holo'] ?? 0;
-        const officialTotal = cardDetails.set && cardDetails.set.cardCount ? cardDetails.set.cardCount.official : setTotalCount;
+      const matchingSets = cachedSetDatabase.filter(set => 
+        set.cardCount && (set.cardCount.official === setTotalCount || set.cardCount.total === setTotalCount)
+      );
 
-        // Inserimento automatico nel registro locale
-        collectionList.push({
-          name: cardDetails.name,
-          set: cardDetails.set ? cardDetails.set.name : '',
-          num: cardDetails.localId + '/' + officialTotal,
-          cond: 'NM', // Condizione di default: Near Mint
-          mkt: marketPrice,
-          val: marketPrice
-        });
-
-        saveAndRefreshList();
-
-        // Aggiunge la miniatura della carta trovata nell'area di anteprima rapida
-        if (cardDetails.image) {
-          const previewImg = document.createElement('img');
-          previewImg.src = cardDetails.image + '/low.webp';
-          getEl('preview-feed').prepend(previewImg);
+      for (const setItem of matchingSets) {
+        for (const formattedId of [String(cardLocalNumber).padStart(3, '0'), String(cardLocalNumber)]) {
+          cardDetails = await fetchJSONData(API_BASE_URL + 'cards/' + setItem.id + '-' + formattedId);
+          if (cardDetails) break;
         }
-        return;
+        if (cardDetails) break;
+      }
+    } else if (cardNameString) {
+      // Ricerca per nome testuale se il numero non è formattato correttamente
+      const searchResults = await fetchJSONData(API_BASE_URL + 'cards?name=' + encodeURIComponent(cardNameString) + '&pagination:page=1&pagination:itemsPerPage=1');
+      if (searchResults && searchResults.length > 0) {
+        cardDetails = await fetchJSONData(API_BASE_URL + 'cards/' + searchResults[0].id);
       }
     }
+
+    if (cardDetails) {
+      const pricingInfo = (cardDetails.pricing && cardDetails.pricing.cardmarket) || {};
+      const marketPrice = pricingInfo.trend ?? pricingInfo['trend-holo'] ?? 0;
+      const officialTotal = cardDetails.set && cardDetails.set.cardCount ? cardDetails.set.cardCount.official : '—';
+
+      collectionList.push({
+        name: cardDetails.name,
+        set: cardDetails.set ? cardDetails.set.name : '',
+        num: cardDetails.localId + '/' + officialTotal,
+        cond: 'NM',
+        mkt: marketPrice,
+        val: marketPrice
+      });
+
+      saveAndRefreshList();
+
+      if (cardDetails.image) {
+        const previewImg = document.createElement('img');
+        previewImg.src = cardDetails.image + '/low.webp';
+        getEl('preview-feed').prepend(previewImg);
+      }
+      
+      getEl('status-message').textContent = `✅ Aggiunta: ${cardDetails.name} (${cardDetails.localId}/${officialTotal})`;
+      return true;
+    } else {
+      getEl('status-message').textContent = `❌ Nessuna carta trovata con i parametri inseriti.`;
+      return false;
+    }
+  } catch (err) {
+    getEl('status-message').textContent = `⚠️ Errore di ricerca: ${err.message}`;
+    return false;
   }
 }
 
 /* ==========================================================================
-   6. GESTIONE DELLA MULTI-SCANSIONE CONTINUA (TURBO STREAM LOOP)
+   6. GESTIONE DELLA MULTI-SCANSIONE CONTINUA E INPUT MANUALE
    ========================================================================== */
 
 let mediaStream = null;
@@ -567,13 +572,11 @@ function stopContinuousScan() {
 }
 
 getEl('btn-toggle-stream').onclick = async () => {
-  // Se la fotocamera è già attiva, arresta il processo
   if (mediaStream) {
     stopContinuousScan();
     return;
   }
 
-  // Richiede l'accesso alla fotocamera posteriore dello smartphone
   try {
     mediaStream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: 'environment', width: { ideal: 1280 } }
@@ -593,12 +596,9 @@ getEl('btn-toggle-stream').onclick = async () => {
   videoElement.srcObject = mediaStream;
   await videoElement.play();
 
-  getEl('status-message').textContent = '🔥 Scansione attiva: posiziona le carte una dietro l\'altra nel mirino!';
-  
-  // Inizializza l'engine OCR
+  getEl('status-message').textContent = '🔥 Scansione attiva: passa le carte una dietro l\'altra nel mirino!';
   await getOCRWorker();
 
-  // Ciclo di scansione continuo ad alta frequenza (ogni 400ms)
   scanIntervalTimer = setInterval(async () => {
     if (isProcessingFrame || !mediaStream || !videoElement.videoWidth) return;
     
@@ -607,12 +607,10 @@ getEl('btn-toggle-stream').onclick = async () => {
       const detectedCode = await scanCardNumber(videoElement, videoElement.videoWidth, videoElement.videoHeight);
       const nowTimestamp = Date.now();
 
-      // Controllo anti-duplicato: attende 2.5 secondi prima di rileggere lo stesso identico codice
       if (detectedCode && (detectedCode !== lastDetectedCode || (nowTimestamp - lastDetectionTimestamp) > 2500)) {
         lastDetectedCode = detectedCode;
         lastDetectionTimestamp = nowTimestamp;
 
-        // Feedback immediato visivo e tattile/sonoro
         playSuccessBeep();
         if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
 
@@ -620,16 +618,31 @@ getEl('btn-toggle-stream').onclick = async () => {
         targetBox.classList.add('read-success');
         setTimeout(() => targetBox.classList.remove('read-success'), 300);
 
-        getEl('status-message').textContent = `⚡ Trovato ${detectedCode}! Inserito nel registro. Passa alla carta successiva!`;
-
-        // Recupera le informazioni della carta senza bloccare lo streaming video
-        fetchAndAddCardToCollection(detectedCode);
+        getEl('status-message').textContent = `⚡ Trovato ${detectedCode}! Inserito nel registro.`;
+        searchAndAddCard(detectedCode, '');
       }
     } catch (e) {
       console.error("Errore durante l'elaborazione del frame video", e);
     }
     isProcessingFrame = false;
   }, 400);
+};
+
+// Gestione del pulsante di ricerca manuale per numero o nome
+getEl('btn-manual-search').onclick = () => {
+  const manualName = getEl('input-manual-name').value.trim();
+  const manualNum = getEl('input-manual-num').value.trim();
+
+  if (!manualName && !manualNum) {
+    alert('Inserisci almeno un numero di carta (es. 025/165) o un nome.');
+    return;
+  }
+
+  searchAndAddCard(manualNum, manualName);
+  
+  // Pulisci i campi dopo l'invio per facilitare l'inserimento successivo
+  getEl('input-manual-num').value = '';
+  getEl('input-manual-name').value = '';
 };
 
 /* ==========================================================================
@@ -658,11 +671,9 @@ function renderCollectionTable() {
           ${['NM','EX','GD','PL','PO'].map(cond => `<option ${cond === cardItem.cond ? 'selected' : ''} style="background:#111827">${cond}</option>`).join('')}
         </select>
       </td>
-      <!-- Campo Prezzo di Mercato Editabile -->
       <td>
         <input type="number" step="0.5" class="input-mkt" value="${cardItem.mkt ?? ''}" style="background:transparent">
       </td>
-      <!-- Campo Prezzo di Vendita Modificabile -->
       <td>
         <input type="number" step="0.5" class="input-val" value="${cardItem.val ?? ''}" style="background:transparent">
       </td>
@@ -671,25 +682,21 @@ function renderCollectionTable() {
       </td>
     `;
 
-    // 1. Modifica della Condizione
     row.querySelector('select').onchange = (e) => {
       cardItem.cond = e.target.value;
       saveAndRefreshList();
     };
 
-    // 2. Modifica del Valore di Mercato
     row.querySelector('.input-mkt').onchange = (e) => {
       cardItem.mkt = e.target.value === '' ? 0 : Number(e.target.value);
       saveAndRefreshList();
     };
 
-    // 3. Modifica del Prezzo di Vendita
     row.querySelector('.input-val').onchange = (e) => {
       cardItem.val = e.target.value === '' ? null : Number(e.target.value);
       saveAndRefreshList();
     };
 
-    // 4. Rimozione della carta
     row.querySelector('.btn-delete').onclick = () => {
       collectionList.splice(index, 1);
       saveAndRefreshList();
@@ -698,7 +705,6 @@ function renderCollectionTable() {
     tableBody.append(row);
   });
 
-  // Aggiorna le statistiche generali nella dashboard in alto
   getEl('stat-count').textContent = collectionList.length;
   getEl('stat-market-value').textContent = formatEuro(totalMarketValue);
   getEl('stat-sale-total').textContent = formatEuro(totalSalesValue);
@@ -708,7 +714,6 @@ function renderCollectionTable() {
    8. ESPORTAZIONE DATI (CSV & PDF)
    ========================================================================== */
 
-// Genera un file CSV scaricabile per Excel/Google Sheets
 getEl('btn-export-csv').onclick = () => {
   const rows = [
     ['Nome Carta', 'Set', 'Numero', 'Condizione', 'Prezzo Mercato', 'Prezzo Vendita'],
@@ -724,10 +729,8 @@ getEl('btn-export-csv').onclick = () => {
   downloadLink.click();
 };
 
-// Apre la finestra di stampa di sistema/salvataggio PDF
 getEl('btn-print-pdf').onclick = () => window.print();
 
-// Ripristino/Svuotamento completo del database locale
 getEl('btn-clear-all').onclick = () => {
   if (confirm('Vuoi davvero cancellare l\'intera collezione salvata nel dispositivo?')) {
     collectionList = [];
@@ -735,7 +738,6 @@ getEl('btn-clear-all').onclick = () => {
   }
 };
 
-// Inizializzazione della vista al caricamento della pagina
 renderCollectionTable();
 </script>
 </body>
