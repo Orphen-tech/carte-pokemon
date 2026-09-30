@@ -29,7 +29,7 @@ td input,td select{padding:4px;width:100%}td input{width:80px}
 <div class="no">
   <label class="btn pri">📷 Scatta o scegli una foto<input id="f" type="file" accept="image/*" capture="environment" hidden></label>
   <button id="live" class="pri" style="width:100%;margin-top:8px">🎥 Scansione automatica</button>
-  <div id="cam" hidden style="position:relative;margin-top:8px"><video id="v" playsinline muted style="width:100%;border-radius:8px;display:block"></video><div style="position:absolute;left:0;right:0;bottom:0;height:25%;border:2px solid var(--acc);border-radius:0 0 8px 8px"></div></div>
+  <div id="cam" hidden style="position:relative;margin-top:8px"><video id="v" autoplay playsinline muted style="width:100%;min-height:220px;background:#000;border-radius:8px;display:block"></video><div style="position:absolute;left:0;right:0;bottom:0;height:25%;border:2px solid var(--acc);border-radius:0 0 8px 8px"></div></div>
   <p id="st" role="status">Inquadra la carta con il numero in basso ben leggibile (es. 025/165).</p>
   <div class="row">
     <input id="n" placeholder="Nome (inglese, opzionale)">
@@ -105,10 +105,14 @@ $('live').onclick=async()=>{
   if(stream){stop();return}
   try{stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280}}})}
   catch(e){$('st').textContent='Fotocamera non disponibile: '+e.message;return}
-  const v=$('v');v.srcObject=stream;await v.play();
-  $('cam').hidden=false;$('live').textContent='⏹ Ferma scansione';
+  const v=$('v');$('cam').hidden=false;$('live').textContent='⏹ Ferma scansione';
+  v.muted=true;v.srcObject=stream;
+  try{await v.play()}catch(e){}
+  await new Promise(r=>{if(v.videoWidth)r();else{v.addEventListener('loadedmetadata',r,{once:true});setTimeout(r,4000)}});
+  if(!v.videoWidth){$('st').textContent='La fotocamera non invia immagini. Chiudi le altre app che la usano e riprova.';stop();return}
   $('st').textContent='Carico il lettore…';
-  const w=await worker();
+  let w;
+  try{w=await worker()}catch(e){$('st').textContent='Lettore OCR non caricato: '+e.message;stop();return}
   $('st').textContent='Porta il numero della carta nel riquadro e tienila ferma.';
   timer=setInterval(async()=>{
     if(busy||!stream||!v.videoWidth)return;busy=true;
@@ -117,9 +121,9 @@ $('live').onclick=async()=>{
       c.width=v.videoWidth;c.height=h;
       const x=c.getContext('2d');x.filter='grayscale(1) contrast(1.6)';
       x.drawImage(v,0,v.videoHeight-h,v.videoWidth,h,0,0,c.width,h);
-      const m=(await w.recognize(c)).data.text.match(/(\d{1,3})\s*\/\s*(\d{2,3})/);
+      const raw=(await w.recognize(c)).data.text,m=raw.match(/(\d{1,3})\s*\/\s*(\d{2,3})/);
       const k=m?m[1]+'/'+m[2]:'';
-      if(!k){if(++empty>=2)hold=''}
+      if(!k){if(++empty>=2){hold='';$('st').textContent='Numero non letto (vedo: "'+raw.replace(/\s+/g,' ').trim().slice(0,25)+'"). Avvicina la carta.'}}
       else{
         empty=0;
         if(k===last&&k!==hold){hold=k;navigator.vibrate&&navigator.vibrate(80);$('num').value=k;$('n').value='';$('st').textContent='Letto '+k+'. Cerco i prezzi… Cambia carta per la prossima.';search()}
