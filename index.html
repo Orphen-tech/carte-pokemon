@@ -3,142 +3,188 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#1a237e">
-<title>PokeVal : Scanner & Tracker Carte</title>
+<meta name="theme-color" content="#030712">
+<title>PokeVault Zero — Collector & Price Tracker</title>
 <style>
 :root {
-  --bg: #0f172a;
-  --card: #1e293b;
-  --card-hover: #334155;
-  --ink: #f8fafc;
-  --mut: #94a3b8;
-  --line: #334155;
-  --acc: #ef4444;
-  --acc-hover: #dc2626;
-  --sec: #3b82f6;
-  --ok: #10b981;
+  --bg: #030712;
+  --card-bg: rgba(17, 24, 39, 0.75);
+  --border: rgba(255, 255, 255, 0.1);
+  --border-focus: #f59e0b;
+  --ink: #f9fafb;
+  --mut: #9ca3af;
+  --gold: #fbbf24;
+  --gold-glow: rgba(251, 191, 36, 0.3);
+  --red: #ef4444;
+  --green: #10b981;
+  --blue: #3b82f6;
+  --radius: 16px;
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
 body {
-  margin: 0; padding: 16px; max-width: 680px; margin-inline: auto;
+  margin: 0; padding: 16px; max-width: 760px; margin-inline: auto;
   background: var(--bg); color: var(--ink);
+  background-image: 
+    radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.15) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(245, 158, 11, 0.12) 0px, transparent 50%);
+  background-attachment: fixed;
   font: 15px/1.5 system-ui, -apple-system, sans-serif;
 }
 
-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-h1 { font-size: 1.4rem; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px; }
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 20px; padding: 14px 18px;
+  background: var(--card-bg); backdrop-filter: blur(16px);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
 
-.card-panel {
-  background: var(--card); border: 1px solid var(--line); border-radius: 12px;
-  padding: 14px; margin-bottom: 16px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+.logo {
+  font-size: 1.4rem; font-weight: 900; letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b, #ef4444);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  display: flex; align-items: center; gap: 8px;
+}
+
+.box {
+  background: var(--card-bg); backdrop-filter: blur(16px);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 18px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
 }
 
 button, .btn, input, select {
-  font: inherit; color: inherit; border: 1px solid var(--line);
-  border-radius: 8px; padding: 10px 14px; background: var(--card); transition: all .15s ease;
+  font: inherit; color: inherit; border: 1px solid var(--border);
+  border-radius: 12px; padding: 12px 14px; background: rgba(31, 41, 55, 0.5);
+  transition: all 0.2s ease;
 }
-button, .btn { cursor: pointer; font-weight: 600; }
-button:active { transform: scale(0.98); }
 
-.pri { background: var(--acc); border-color: var(--acc); color: #fff; display: block; text-align: center; }
-.pri:hover { background: var(--acc-hover); }
-.sec { background: var(--sec); border-color: var(--sec); color: #fff; }
+button, .btn { cursor: pointer; font-weight: 700; }
+button:active { transform: scale(0.97); }
 
-.row { display: flex; gap: 8px; margin: 8px 0; flex-wrap: wrap; }
-.row input { flex: 1; min-width: 120px; }
+.pri {
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  border: none; color: #fff; display: block; text-align: center;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+}
+.sec {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border: none; color: #fff;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
+
+.row { display: flex; gap: 10px; margin: 10px 0; flex-wrap: wrap; }
+.row input { flex: 1; min-width: 140px; }
 
 #cam {
-  position: relative; margin-top: 10px; height: 260px;
-  background: #000; border-radius: 10px; overflow: hidden;
+  position: relative; margin-top: 12px; height: 280px;
+  background: #000; border-radius: 14px; overflow: hidden;
+  border: 1px solid var(--border);
 }
 #v { width: 100%; height: 100%; object-fit: cover; }
 #overlay {
-  position: absolute; inset: 0; border: 2px solid rgba(255,255,255,0.2);
+  position: absolute; inset: 0;
   display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 15px;
+  background: radial-gradient(circle, transparent 55%, rgba(0,0,0,0.7) 100%);
 }
 #target-box {
-  width: 75%; height: 50px; border: 2px dashed var(--acc);
-  background: rgba(239, 68, 68, 0.2); border-radius: 6px; pointer-events: none;
+  width: 85%; height: 60px; border: 2px dashed var(--gold);
+  background: rgba(251, 191, 36, 0.12); border-radius: 10px;
+  box-shadow: 0 0 20px var(--gold-glow); pointer-events: none;
 }
 
-#st { font-size: 0.85rem; color: var(--mut); margin: 6px 0; min-height: 1.4em; }
+#st { font-size: 0.85rem; color: var(--mut); margin: 8px 0; min-height: 1.4em; }
 
-.c-item {
-  display: flex; gap: 12px; align-items: center; background: var(--card);
-  border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin: 8px 0;
-}
-.c-item img { width: 54px; height: 75px; object-fit: contain; border-radius: 4px; background: #000; }
-.c-item .info { flex: 1; }
-.c-item .title { font-weight: 700; font-size: 0.95rem; }
-.badge { display: inline-block; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; background: var(--line); color: var(--mut); }
-
+/* Dashboard Statistiche */
 .stats-grid {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
-  background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 16px; text-align: center;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px;
 }
-.stat-val { font-size: 1.1rem; font-weight: 700; color: var(--ok); }
-.stat-lbl { font-size: 0.75rem; color: var(--mut); }
+.stat-card {
+  background: var(--card-bg); backdrop-filter: blur(12px);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 12px; text-align: center;
+}
+.stat-val { font-size: 1.25rem; font-weight: 800; color: var(--gold); }
+.stat-lbl { font-size: 0.7rem; color: var(--mut); text-transform: uppercase; letter-spacing: 0.5px; }
 
-table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 10px; overflow: hidden; }
-td, th { padding: 8px 10px; border-bottom: 1px solid var(--line); text-align: left; font-size: 0.85rem; }
-td input, td select { padding: 4px 6px; width: 100%; font-size: 0.85rem; }
-td input[type="number"] { width: 75px; }
+/* Risultati e Carte */
+.grid-cards {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px;
+}
+.c-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 14px; padding: 12px; display: flex; flex-direction: column;
+  align-items: center; text-align: center; transition: all 0.2s;
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.c-card:hover { transform: translateY(-4px); border-color: var(--gold); }
+.c-card img { width: 100%; height: 190px; object-fit: contain; border-radius: 8px; margin-bottom: 8px; }
+.c-card .title { font-weight: 700; font-size: 0.9rem; line-height: 1.2; margin-bottom: 4px; }
+.badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; background: rgba(255,255,255,0.08); color: var(--mut); }
+.price-tag { font-weight: 800; color: var(--green); font-size: 1.1rem; margin: 6px 0; }
 
+table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: var(--radius); overflow: hidden; }
+td, th { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; font-size: 0.85rem; }
+td input, td select { padding: 6px; width: 100%; font-size: 0.85rem; }
+
+@keyframes popIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
 @media print { body { background: #fff; color: #000; } .no { display: none !important; } }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>🎴 PokeVal</h1>
-  <span id="pwa-status" class="badge">Scanner Carte</span>
+  <div class="logo">⚡ PokeVault Zero</div>
+  <span class="badge" style="border: 1px solid var(--gold); color: var(--gold)">PRO EDITION</span>
 </header>
 
 <div class="no">
-  <div class="card-panel">
+  <div class="box">
     <label class="btn pri">📷 Scatta / Carica Foto
       <input id="f" type="file" accept="image/*" capture="environment" hidden>
     </label>
-    <button id="live" class="sec" style="width:100%; margin-top:8px">🎥 Scansione Live</button>
+    <button id="live" class="sec" style="width:100%; margin-top:10px">🎥 Scansione Live Multi-Zona</button>
 
     <div id="cam" hidden>
       <video id="v" autoplay playsinline muted></video>
-      <div id="overlay">
-        <div id="target-box"></div>
-      </div>
+      <div id="overlay"><div id="target-box"></div></div>
     </div>
 
-    <p id="st">Inquadra il numero in basso a sinistra/destra della carta (es. 025/165).</p>
+    <p id="st">Inquadra il numero della carta (es. 025/165) nella cornice.</p>
 
     <div class="row">
       <input id="n" placeholder="Nome carta (Inglese)">
       <input id="num" placeholder="Numero es. 025/165">
-      <button id="go" class="pri">Cerca</button>
+      <button id="go" class="pri" style="min-width: 90px">Cerca</button>
     </div>
   </div>
 
-  <div id="res"></div>
+  <div id="res" class="grid-cards" style="margin-bottom: 24px;"></div>
 </div>
 
 <div class="stats-grid">
-  <div><div id="st-qty" class="stat-val">0</div><div class="stat-lbl">Carte</div></div>
-  <div><div id="st-mkt" class="stat-val">0.00 €</div><div class="stat-lbl">Valore Mercato</div></div>
-  <div><div id="st-tot" class="stat-val">0.00 €</div><div class="stat-lbl">Totale Vendita</div></div>
+  <div class="stat-card"><div id="st-qty" class="stat-val">0</div><div class="stat-lbl">Carte</div></div>
+  <div class="stat-card"><div id="st-mkt" class="stat-val">0.00 €</div><div class="stat-lbl">Valore Mercato</div></div>
+  <div class="stat-card"><div id="st-tot" class="stat-val" style="color:var(--green)">0.00 €</div><div class="stat-lbl">Mio Totale</div></div>
 </div>
 
-<h2>La Mia Collezione</h2>
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px">
+  <h2 style="font-size: 1.1rem; margin:0">La Mia Collezione</h2>
+  <input id="search-list" placeholder="Filtra lista…" style="padding:4px 10px; font-size:0.8rem; width:150px" class="no">
+</div>
+
 <table>
   <thead>
-    <tr><th>Carta</th><th>Cond.</th><th>Mercato</th><th>Prezzo</th><th class="no"></th></tr>
+    <tr><th>Carta</th><th>Cond.</th><th>Mercato</th><th>Vendo a</th><th class="no"></th></tr>
   </thead>
   <tbody id="list"></tbody>
 </table>
 
-<div class="row no" style="margin-top:16px">
+<div class="row no" style="margin-top:20px">
   <button id="csv">Esporta CSV</button>
   <button id="pdf">Stampa PDF</button>
-  <button id="clr" style="margin-left:auto; border-color:var(--acc); color:var(--acc)">Svuota</button>
+  <button id="clr" style="margin-left:auto; border-color:var(--red); color:var(--red)">Svuota</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
@@ -146,13 +192,10 @@ td input[type="number"] { width: 75px; }
 const $=id=>document.getElementById(id);
 const eur=v=>v==null||isNaN(v)?'—':Number(v).toFixed(2)+' €';
 let L=[];
-try{L=JSON.parse(localStorage.getItem('pkm_collection')||'[]')}catch(e){}
-const save=()=>{try{localStorage.setItem('pkm_collection',JSON.stringify(L))}catch(e){}draw()};
+try{L=JSON.parse(localStorage.getItem('pokevault_data')||'[]')}catch(e){}
+const save=()=>{try{localStorage.setItem('pokevault_data',JSON.stringify(L))}catch(e){}draw()};
 
-// API Key per AI se disponibile nel codice (opzionale)
-const AI_API_KEY = ""; 
-
-/* ---------- OCR / Processamento Immagine ---------- */
+/* ---------- Engine OCR Ottimizzato a Doppia Zona ---------- */
 let W=null;
 async function getWorker(){
   if(!W){
@@ -191,32 +234,43 @@ function otsuBinarize(ctx, w, h) {
   ctx.putImageData(imgData, 0, 0);
 }
 
-function cropAndPrep(src, sw, sh) {
-  // Prende la fascia inferiore dove solitamente risiede il numero di serie
-  const cw = sw * 0.8, ch = sh * 0.25;
+// Genera canvas ritagliati sia per la zona sinistra che destra in basso
+function cropRegions(src, sw, sh) {
+  const ch = sh * 0.25;
+  const cw = sw * 0.45; // Metà della larghezza per ciascun lato
   const scale = Math.max(2, 300 / ch);
-  const c = document.createElement('canvas');
-  c.width = Math.round(cw * scale); c.height = Math.round(ch * scale);
-  const x = c.getContext('2d', {willReadFrequently: true});
-  x.imageSmoothingEnabled = false;
-  x.drawImage(src, sw * 0.1, sh * 0.70, cw, ch, 0, 0, c.width, c.height);
-  otsuBinarize(x, c.width, c.height);
-  return c;
+  
+  const createSubCanvas = (startX) => {
+    const c = document.createElement('canvas');
+    c.width = Math.round(cw * scale); c.height = Math.round(ch * scale);
+    const x = c.getContext('2d', {willReadFrequently: true});
+    x.imageSmoothingEnabled = false;
+    x.drawImage(src, startX, sh * 0.72, cw, ch, 0, 0, c.width, c.height);
+    otsuBinarize(x, c.width, c.height);
+    return c;
+  };
+
+  return [createSubCanvas(sw * 0.05), createSubCanvas(sw * 0.50)];
 }
 
 async function readNum(src, sw, sh) {
   const w = await getWorker();
-  const cvs = cropAndPrep(src, sw, sh);
-  const res = await w.recognize(cvs);
-  const clean = res.data.text.replace(/\s+/g, '');
-  const match = clean.match(/(\d{1,3})\/(\d{2,3})/);
-  return { k: match ? `${match[1]}/${match[2]}` : '', t: clean };
+  const [leftCvs, rightCvs] = cropRegions(src, sw, sh);
+  
+  // Scansione parallela delle due aree (sinistra e destra)
+  for (const cvs of [leftCvs, rightCvs]) {
+    const res = await w.recognize(cvs);
+    const clean = res.data.text.replace(/\s+/g, '');
+    const match = clean.match(/(\d{1,3})\/(\d{2,3})/);
+    if (match) return { k: `${match[1]}/${match[2]}`, t: clean };
+  }
+  return { k: '', t: '' };
 }
 
-/* ---------- Gestione Scatto Foto ---------- */
+/* ---------- Gestione Foto ---------- */
 $('f').onchange = async e => {
   const file = e.target.files[0]; if (!file) return;
-  $('st').textContent = 'Analisi immagine in corso…';
+  $('st').textContent = 'Analisi ottica multi-zona…';
   try {
     const bmp = await createImageBitmap(file);
     const r = await readNum(bmp, bmp.width, bmp.height);
@@ -225,20 +279,20 @@ $('f').onchange = async e => {
       $('st').textContent = 'Numero letto: ' + r.k;
       search();
     } else {
-      $('st').textContent = 'Lettura automatica incerta. Verifica il numero inserito.';
+      $('st').textContent = 'Numero non rilevato. Controlla e inseriscilo a mano.';
     }
-  } catch (err) { $('st').textContent = 'Errore durante l\'analisi: ' + err.message; }
+  } catch (err) { $('st').textContent = 'Errore analisi: ' + err.message; }
   e.target.value = '';
 };
 
-/* ---------- Ricerca TCGdex API ---------- */
+/* ---------- Ricerca API TCGdex ---------- */
 let SETS = null;
 async function fetchJSON(u){try{const r=await fetch(u);return r.ok?await r.json():null}catch(e){return null}}
 
 async function search(){
   const name = $('n').value.trim();
   const m = $('num').value.match(/(\d+)\s*\/\s*(\d+)/);
-  if (!m && !name) { $('st').textContent = 'Inserisci un nome o un numero valido.'; return; }$('res').textContent = 'Ricerca nel database Pokémon…';
+  if (!m && !name) { $('st').textContent = 'Inserisci nome o numero valido.'; return; }$('res').innerHTML = '<p class="stat-lbl" style="grid-column: 1/-1">Connessione al caveau TCGdex…</p>';
   const BASE = 'https://api.tcgdex.net/v2/en/';
   
   try {
@@ -255,11 +309,11 @@ async function search(){
         return null;
       }))).filter(Boolean);
     } else {
-      const list = await fetchJSON(BASE + 'cards?name=' + encodeURIComponent(name) + '&pagination:page=1&pagination:itemsPerPage=10') || [];
+      const list = await fetchJSON(BASE + 'cards?name=' + encodeURIComponent(name) + '&pagination:page=1&pagination:itemsPerPage=8') || [];
       cards = (await Promise.all(list.map(c => fetchJSON(BASE + 'cards/' + c.id)))).filter(Boolean);
     }
 
-    $('res').innerHTML = cards.length ? '' : '<p class="stat-lbl">Nessuna carta trovata. Prova a cercare inserendo solo il nome in inglese.</p>';
+    $('res').innerHTML = cards.length ? '' : '<p class="stat-lbl" style="grid-column: 1/-1">Nessuna carta corrispondente trovata.</p>';
     
     cards.forEach(c => {
       const cm = (c.pricing && c.pricing.cardmarket) || {};
@@ -267,20 +321,18 @@ async function search(){
       const setTotal = c.set && c.set.cardCount ? c.set.cardCount.official : '?';
       
       const el = document.createElement('div');
-      el.className = 'c-item';
+      el.className = 'c-card';
       el.innerHTML = `
-        <img src="${c.image ? c.image + '/low.webp' : ''}" alt="${c.name}">
-        <div class="info">
-          <div class="title">${c.name}</div>
-          <span class="badge">${c.set ? c.set.name : ''} · ${c.localId}/${setTotal}</span>
-          <div style="margin-top:4px; font-weight:600; color:var(--ok)">Valore: ${eur(price)}</div>
-        </div>
-        <button class="pri">Aggiungi</button>
+        <img src="${c.image ? c.image + '/low.webp' : ''}" alt="${c.name}" loading="lazy">
+        <div class="title">${c.name}</div>
+        <span class="badge">${c.set ? c.set.name : ''} · ${c.localId}/${setTotal}</span>
+        <div class="price-tag">${eur(price)}</div>
+        <button class="pri" style="width:100%; padding:8px; font-size:0.8rem">+ Aggiungi</button>
       `;
       el.querySelector('button').onclick = () => {
         L.push({ name: c.name, set: c.set ? c.set.name : '', num: c.localId + '/' + setTotal, cond: 'NM', mkt: price, val: price });
         save();
-        $('st').textContent = c.name + ' aggiunta alla collezione!';
+        $('st').textContent = c.name + ' salvata nel Caveau!';
       };
       $('res').append(el);
     });
@@ -293,7 +345,7 @@ let stream = null, timer = 0, busy = false, lastRead = '';
 function stopLive(){
   clearInterval(timer);
   if (stream) stream.getTracks().forEach(t => t.stop());
-  stream = null; lastRead = ''; $('cam').hidden = true; $('live').textContent = '🎥 Scansione Live';
+  stream = null; lastRead = ''; $('cam').hidden = true; $('live').textContent = '🎥 Scansione Live Multi-Zona';
 }
 
 $('live').onclick = async () => {
@@ -304,10 +356,10 @@ $('live').onclick = async () => {
     });
   } catch (e) { $('st').textContent = 'Fotocamera non disponibile: ' + e.message; return; }
   
-  const v = $('v'); $('cam').hidden = false; $('live').textContent = '⏹ Interrompi';
+  const v = $('v'); $('cam').hidden = false; $('live').textContent = '⏹ Ferma Scanner';
   v.srcObject = stream; await v.play();
   
-  $('st').textContent = 'Posiziona il numero di carta nel rettangolo rosso.';
+  $('st').textContent = 'Inquadra il numero di carta nella cornice.';
   try { await getWorker(); } catch(e) { stopLive(); return; }
   
   timer = setInterval(async () => {
@@ -317,9 +369,9 @@ $('live').onclick = async () => {
       const r = await readNum(v, v.videoWidth, v.videoHeight);
       if (r.k && r.k !== lastRead) {
         lastRead = r.k;
-        if (navigator.vibrate) navigator.vibrate(60);
+        if (navigator.vibrate) navigator.vibrate(80);
         $('num').value = r.k;
-        $('st').textContent = 'Letto: ' + r.k;
+        $('st').textContent = 'Trovato: ' + r.k;
         search();
       }
     } catch(e) {}
@@ -327,26 +379,31 @@ $('live').onclick = async () => {
   }, 700);
 };
 
-/* ---------- Render Lista e Statistiche ---------- */
+/* ---------- Rendering e Filtro Collezione ---------- */
 function draw() {
   $('list').innerHTML = '';
   let sumMkt = 0, sumVal = 0;
+  const filterText = $('search-list').value.toLowerCase().trim();
   
   L.forEach((c, i) => {
     sumMkt += (c.mkt || 0);
     sumVal += (c.val || 0);
     
+    if (filterText && !c.name.toLowerCase().includes(filterText) && !c.set.toLowerCase().includes(filterText)) {
+      return;
+    }
+    
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><b>${c.name}</b><br><span class="badge">${c.set} ${c.num}</span></td>
       <td>
-        <select>
-          ${['NM','EX','GD','PL','PO'].map(x => `<option ${x === c.cond ? 'selected' : ''}>${x}</option>`).join('')}
+        <select style="background:transparent">
+          ${['NM','EX','GD','PL','PO'].map(x => `<option ${x === c.cond ? 'selected' : ''} style="background:#111827">${x}</option>`).join('')}
         </select>
       </td>
       <td>${eur(c.mkt)}</td>
-      <td><input type="number" step="0.5" value="${c.val ?? ''}"></td>
-      <td class="no"><button style="padding:4px 8px; border-color:transparent">✕</button></td>
+      <td><input type="number" step="0.5" value="${c.val ?? ''}" style="background:transparent"></td>
+      <td class="no"><button style="padding:4px 8px; border:none; background:transparent; color:var(--red)">✕</button></td>
     `;
     tr.querySelector('select').onchange = e => { c.cond = e.target.value; save(); };
     tr.querySelector('input').onchange = e => { c.val = e.target.value === '' ? null : +e.target.value; save(); };
@@ -358,14 +415,16 @@ function draw() {
   $('st-mkt').textContent = eur(sumMkt);$('st-tot').textContent = eur(sumVal);
 }
 
-/* ---------- Export CSV & PDF ---------- */
+$('search-list').oninput = draw;
+
+/* ---------- Esportazione ---------- */
 $('csv').onclick = () => {
   const rows = [['Nome Carta', 'Set', 'Numero', 'Condizione', 'Prezzo Mercato', 'Prezzo Vendita'], ...L.map(c => [c.name, c.set, c.num, c.cond, c.mkt ?? '', c.val ?? ''])];
   const csvStr = rows.map(r => r.map(x => `"${String(x).replace(/"/g, '""')}"`).join(';')).join('\n');
   const blob = new Blob(['\ufeff' + csvStr], { type: 'text/csv;charset=utf-8;' });
-  const a = document.createElement('a'); a.href = URL.URL.createObjectURL(blob); a.download = 'Collezione_Pokemon.csv'; a.click();
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'PokeVault_Collection.csv'; a.click();
 };
-$('pdf').onclick = () => print();$('clr').onclick = () => { if (confirm('Vuoi davvero cancellare tutta la collezione salvata?')) { L = []; save(); } };
+$('pdf').onclick = () => print();$('clr').onclick = () => { if (confirm('Attenzione: Vuoi azzerare il tuo Caveau?')) { L = []; save(); } };
 
 draw();
 </script>
