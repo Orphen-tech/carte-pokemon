@@ -37,6 +37,7 @@ td,th{padding:10px 12px;border-bottom:1px solid var(--panel-border);text-align:l
 td input,td select{padding:6px;width:100%;font-size:.85rem}
 .th{width:34px;border-radius:4px;vertical-align:middle;margin-right:6px}
 .badge{font-size:.7rem;padding:2px 8px;border-radius:20px;background:rgba(255,255,255,.08);color:var(--text-muted)}
+#lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;z-index:9}#lightbox[hidden]{display:none}#lightbox img{max-width:96%;max-height:96%}
 @keyframes popIn{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
 </style>
 </head>
@@ -71,6 +72,8 @@ td input,td select{padding:6px;width:100%;font-size:.85rem}
   </div>
 
   <div id="preview-feed" class="scan-feed"></div>
+  <div class="row"><input id="api-key" type="password" placeholder="Chiave API Anthropic (opzionale: lettura AI delle foto)" autocomplete="off"></div>
+  <div id="pending-feed" class="scan-feed" title="Foto in coda: tocca per correggere a mano"></div>
 </div>
 
 <div class="stats-grid">
@@ -95,6 +98,7 @@ td input,td select{padding:6px;width:100%;font-size:.85rem}
   <button id="btn-clear-all" style="margin-left:auto;border-color:var(--color-danger);color:var(--color-danger)">Svuota Lista</button>
 </div>
 
+<div id="lightbox" hidden><img alt=""></div>
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 <script>
 const getEl = id => document.getElementById(id);
@@ -135,6 +139,7 @@ async function photoURL(id) {
 let pending = [];
 try { pending = JSON.parse(localStorage.getItem('pokevault_pending') || '[]'); } catch (e) {}
 function savePending() {
+  renderPending();
   try { localStorage.setItem('pokevault_pending', JSON.stringify(pending)); } catch (e) {}
   getEl('btn-process').textContent = pending.length ? `🔎 Riconosci ${pending.length} foto` : '🔎 Riconosci foto';
 }
@@ -155,7 +160,7 @@ let tesseractWorker = null;
 async function getOCRWorker() {
   if (!tesseractWorker) {
     tesseractWorker = await Tesseract.createWorker('eng');
-    await tesseractWorker.setParameters({ tessedit_char_whitelist: '0123456789/', tessedit_pageseg_mode: Tesseract.PSM.SINGLE_LINE });
+    await tesseractWorker.setParameters({ tessedit_char_whitelist: '0123456789/', tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT });
   }
   return tesseractWorker;
 }
@@ -184,21 +189,54 @@ function applyOtsuThresholding(context, width, height) {
   context.putImageData(imgData, 0, 0);
 }
 
-function cropLowerCardRegion(videoSource, sourceWidth, sourceHeight) {
-  const cropHeight = sourceHeight * 0.28, cropWidth = sourceWidth * 0.9;
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.round(cropWidth); canvas.height = Math.round(cropHeight);
-  const ctx = canvas.getContext('2d', { willReadFrequently: true });
-  ctx.drawImage(videoSource, sourceWidth * 0.05, sourceHeight * 0.70, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
-  applyOtsuThresholding(ctx, canvas.width, canvas.height);
-  return canvas;
+const REG=[[0,.78,.5,.22],[.5,.78,.5,.22]], REG2=[[0,.6,.5,.4],[.5,.6,.5,.4],[0,0,1,1]];
+let lastOCRText = '';
+function prepRegion(src, sw, sh, [fx, fy, fw, fh], mode) {
+  const cw = sw * fw, ch = sh * fh, k0 = 1000 / cw, c = document.createElement('canvas');
+  c.width = Math.round(cw * k0); c.height = Math.round(ch * k0);
+  const x = c.getContext('2d', { willReadFrequently: true });
+  x.drawImage(src, sw * fx, sh * fy, cw, ch, 0, 0, c.width, c.height);
+  if (mode === 2) { applyOtsuThresholding(x, c.width, c.height); return c; }
+  const d = x.getImageData(0, 0, c.width, c.height), p = d.data; let lo = 255, hi = 0;
+  for (let i = 0; i < p.length; i += 4) { const g = .3 * p[i] + .59 * p[i+1] + .11 * p[i+2]; p[i] = g; if (g < lo) lo = g; if (g > hi) hi = g; }
+  const k = 255 / Math.max(hi - lo, 1);
+  for (let i = 0; i < p.length; i += 4) { let g = (p[i] - lo) * k; if (mode === 1) g = 255 - g; p[i] = p[i+1] = p[i+2] = g; }
+  x.putImageData(d, 0, 0); return c;
+}
+// deep=false: veloce (dal vivo). deep=true: più ritagli, immagine invertita, soglia Otsu (foto in coda)
+let lastGuess = '';
+async function scanCardNumber(src, sw, sh, deep = false) {
+  const worker = await getOCRWorker(), votes = {}; lastGuess = '';
+  for (const r of (deep ? [...REG, ...REG2] : REG)) for (const m of (deep ? [0, 1, 2] : [0])) {
+    const t = (await worker.recognize(prepRegion(src, sw, sh, r, m))).data.text; lastOCRText = t;
+    const x = t.match(/(\d{1,3})\s*\/\s*(\d{2,3})/);
+    if (!x) continue;
+    const code = (+x[1]) + '/' + (+x[2]);
+    if (!deep) return code;
+    votes[code] = (votes[code] || 0) + 1;
+    if (votes[code] >= 2) return code;
+    if (!lastGuess) lastGuess = code;
+  }
+  return '';
 }
 
-async function scanCardNumber(videoSource, sourceWidth, sourceHeight) {
-  const worker = await getOCRWorker();
-  const r = await worker.recognize(cropLowerCardRegion(videoSource, sourceWidth, sourceHeight));
-  const match = r.data.text.replace(/\s+/g, '').match(/(\d{1,3})\/(\d{2,3})/);
-  return match ? `${match[1]}/${match[2]}` : '';
+/* --- Lettura AI opzionale (chiave salvata solo su questo telefono) --- */
+try { getEl('api-key').value = localStorage.getItem('pokevault_key') || ''; } catch (e) {}
+getEl('api-key').onchange = () => { try { localStorage.setItem('pokevault_key', getEl('api-key').value.trim()); } catch (e) {} };
+async function readAI(blob) {
+  const bmp = await createImageBitmap(blob), sc = Math.min(1, 1400 / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas');
+  c.width = Math.round(bmp.width * sc); c.height = Math.round(bmp.height * sc);
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  const data = c.toDataURL('image/jpeg', .85).split(',')[1];
+  const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-api-key': getEl('api-key').value.trim(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 150, messages: [{ role: 'user', content: [
+      { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } },
+      { type: 'text', text: 'Questa è una carta Pokémon. Rispondi SOLO con JSON: {"name":"nome inglese della carta","number":"numero di collezione es. 025","total":"totale del set es. 165"}. Usa "" per ciò che non riesci a leggere.' }] }] }) });
+  const j = await r.json(); if (!r.ok) throw new Error(j.error?.message || r.status);
+  const o = JSON.parse(j.content[0].text.replace(/```json|```/g, '').trim());
+  const n = String(o.number || '').match(/^\d+$/), t = String(o.total || '').match(/^\d+$/);
+  return { code: n && t ? (+n[0]) + '/' + (+t[0]) : '', name: o.name || '' };
 }
 
 /* --- TCGdex API Integration --- */
@@ -216,13 +254,19 @@ async function searchAndAddCard(cardNumberString, cardNameString = '', photoId =
       const cardLocalNumber = +match[1], setTotalCount = +match[2];
       if (!cachedSetDatabase) cachedSetDatabase = await fetchJSONData(API_BASE_URL + 'sets') || [];
       const matchingSets = cachedSetDatabase.filter(set => set.cardCount && (set.cardCount.official === setTotalCount || set.cardCount.total === setTotalCount));
+      const want = cardNameString.toLowerCase();
+      const same = n => { n = n.toLowerCase(); return n.includes(want) || want.includes(n); };
       for (const setItem of matchingSets) {
+        let c = null;
         for (const formattedId of [String(cardLocalNumber).padStart(3, '0'), String(cardLocalNumber)]) {
-          cardDetails = await fetchJSONData(API_BASE_URL + 'cards/' + setItem.id + '-' + formattedId);
-          if (cardDetails) break;
+          c = await fetchJSONData(API_BASE_URL + 'cards/' + setItem.id + '-' + formattedId);
+          if (c) break;
         }
-        if (cardDetails) break;
+        if (!c) continue;
+        if (!cardDetails) cardDetails = c;
+        if (want && same(c.name)) { cardDetails = c; break; }
       }
+      if (want && cardDetails && !same(cardDetails.name)) cardDetails = null;
     } else if (cardNameString) {
       const searchResults = await fetchJSONData(API_BASE_URL + 'cards?name=' + encodeURIComponent(cardNameString) + '&pagination:page=1&pagination:itemsPerPage=1');
       if (searchResults && searchResults.length > 0) cardDetails = await fetchJSONData(API_BASE_URL + 'cards/' + searchResults[0].id);
@@ -316,10 +360,13 @@ async function shoot(v) {
   if (shooting || !v.videoWidth) return;
   shooting = true;
   try {
-    const w = Math.min(1280, v.videoWidth), h = Math.round(v.videoHeight * w / v.videoWidth);
-    const c = document.createElement('canvas'); c.width = w; c.height = h;
-    c.getContext('2d').drawImage(v, 0, 0, w, h);
-    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.82));
+    let still0 = null;
+    try { if (window.ImageCapture) still0 = await new ImageCapture(bStream.getVideoTracks()[0]).takePhoto(); } catch (e) {}
+    const bmp0 = still0 ? await createImageBitmap(still0) : null;
+    const sw = bmp0 ? bmp0.width : v.videoWidth, sh = bmp0 ? bmp0.height : v.videoHeight, kk = Math.min(1, 2400 / Math.max(sw, sh));
+    const c = document.createElement('canvas'); c.width = Math.round(sw * kk); c.height = Math.round(sh * kk);
+    c.getContext('2d').drawImage(bmp0 || v, 0, 0, c.width, c.height);
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.85));
     const id = Date.now() + '-' + Math.random().toString(36).slice(2, 6);
     await putPhoto({ id, blob });
     pending.push(id); savePending(); shots++;
@@ -348,6 +395,7 @@ getEl('btn-burst').onclick = async () => {
     bStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 } } });
   } catch (err) { alert('Impossibile accedere alla fotocamera: ' + err.message); return; }
   try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
+  try { await bStream.getVideoTracks()[0].applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch (e) {}
   const v = getEl('video-preview');
   getEl('camera-wrapper').hidden = false; getEl('camera-wrapper').classList.add('is-scanning');
   getEl('btn-burst').textContent = '⏹ FERMA RAFFICA';
@@ -368,29 +416,55 @@ getEl('btn-burst').onclick = async () => {
 };
 
 /* --- Riconoscimento delle foto in coda --- */
+let selPhoto = null; const guesses = {};
+function renderPending() {
+  const f = getEl('pending-feed'); f.innerHTML = '';
+  pending.forEach(id => {
+    const im = document.createElement('img');
+    im.style.opacity = id === selPhoto ? 1 : .6; im.style.outline = id === selPhoto ? '2px solid var(--accent-gold)' : 'none';
+    photoURL(id).then(u => { if (u) im.src = u; });
+    im.onclick = () => { selPhoto = id; renderPending(); if (guesses[id]) getEl('input-manual-num').value = guesses[id]; getEl('status-message').textContent = 'Foto selezionata: controlla il numero sulla carta, correggilo se serve e premi Cerca.'; };
+    f.append(im);
+  });
+}
 getEl('btn-process').onclick = async () => {
   if (!pending.length) { getEl('status-message').textContent = 'Nessuna foto in coda.'; return; }
   if (bStream) stopBurst();
-  const queue = [...pending]; let ok = 0, ko = 0;
+  const key = getEl('api-key').value.trim(), queue = [...pending]; let ok = 0, ko = 0, why = '';
   for (const id of queue) {
     getEl('status-message').textContent = `🔎 Riconosco ${ok + ko + 1}/${queue.length}…`;
     try {
       const p = await getPhoto(id);
       if (!p) { pending = pending.filter(x => x !== id); continue; }
-      const bmp = await createImageBitmap(p.blob);
-      const code = await scanCardNumber(bmp, bmp.width, bmp.height);
-      if (code && await searchAndAddCard(code, '', id)) { pending = pending.filter(x => x !== id); ok++; } else ko++;
-    } catch (e) { ko++; }
+      let done = false;
+      if (key) {
+        try {
+          const r = await readAI(p.blob);
+          if (r.code) done = await searchAndAddCard(r.code, r.name, id);
+          if (!done && r.name) done = await searchAndAddCard('', r.name, id);
+        } catch (e) { why = 'AI: ' + e.message; }
+      }
+      if (!done) {
+        const bmp = await createImageBitmap(p.blob);
+        const code = await scanCardNumber(bmp, bmp.width, bmp.height, true);
+        if (code) done = await searchAndAddCard(code, '', id);
+        else { if (lastGuess) guesses[id] = lastGuess; why = lastGuess ? 'lettura non sicura (' + lastGuess + '), da controllare' : 'OCR vede: "' + lastOCRText.replace(/\s+/g, ' ').trim().slice(0, 30) + '"'; }
+      }
+      if (done) { pending = pending.filter(x => x !== id); ok++; } else ko++;
+    } catch (e) { ko++; why = e.message; }
     savePending();
   }
-  getEl('status-message').textContent = `Fatto: ${ok} riconosciute, ${ko} non lette (restano in coda: riprova o inserisci il numero a mano).`;
+  getEl('status-message').textContent = `Fatto: ${ok} riconosciute, ${ko} no.` + (ko ? ` Tocca le foto rimaste per correggerle a mano. (${why})` : '');
 };
 
-getEl('btn-manual-search').onclick = () => {
+getEl('btn-manual-search').onclick = async () => {
   const manualName = getEl('input-manual-name').value.trim(), manualNum = getEl('input-manual-num').value.trim();
   if (!manualName && !manualNum) { alert('Inserisci un numero o un nome.'); return; }
-  searchAndAddCard(manualNum, manualName);
-  getEl('input-manual-num').value = ''; getEl('input-manual-name').value = '';
+  const ok = await searchAndAddCard(manualNum, manualName, selPhoto);
+  if (ok) {
+    if (selPhoto) { pending = pending.filter(x => x !== selPhoto); selPhoto = null; savePending(); }
+    getEl('input-manual-num').value = ''; getEl('input-manual-name').value = '';
+  }
 };
 
 /* --- Rendering Table con Filtro --- */
@@ -411,7 +485,7 @@ function renderCollectionTable() {
       <td><input type="number" step="0.5" class="input-val" value="${cardItem.val ?? ''}" style="background:transparent"></td>
       <td><button class="btn-delete" style="border:none;background:transparent;color:var(--color-danger)">✕</button></td>`;
     const th = row.querySelector('.th');
-    if (th) photoURL(cardItem.photo).then(u => { if (u) th.src = u; });
+    if (th) { photoURL(cardItem.photo).then(u => { if (u) th.src = u; }); th.onclick = () => { getEl('lightbox').firstElementChild.src = th.src; getEl('lightbox').hidden = false; }; }
     row.querySelector('select').onchange = e => { cardItem.cond = e.target.value; saveAndRefreshList(); };
     row.querySelector('.input-mkt').onchange = e => { cardItem.mkt = e.target.value === '' ? 0 : Number(e.target.value); saveAndRefreshList(); };
     row.querySelector('.input-val').onchange = e => { cardItem.val = e.target.value === '' ? null : Number(e.target.value); saveAndRefreshList(); };
@@ -423,6 +497,7 @@ function renderCollectionTable() {
   getEl('stat-sale-total').textContent = formatEuro(totalSalesValue);
 }
 getEl('search-filter').oninput = renderCollectionTable;
+getEl('lightbox').onclick = () => { getEl('lightbox').hidden = true; };
 
 /* --- Export & Data Actions --- */
 getEl('btn-export-csv').onclick = () => {
