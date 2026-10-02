@@ -22,8 +22,8 @@ button{cursor:pointer;font-weight:700}button:active{transform:scale(.97)}
 #camera-wrapper[hidden]{display:none}
 #camera-wrapper.is-scanning{border-color:var(--color-success);box-shadow:0 0 20px rgba(16,185,129,.3)}
 #video-preview{width:100%;height:100%;object-fit:cover}
-#camera-overlay{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding-bottom:20px;background:radial-gradient(circle,transparent 50%,rgba(0,0,0,.7) 100%);pointer-events:none}
-#target-box{width:85%;height:65px;border:2px dashed var(--accent-gold);background:rgba(251,191,36,.15);border-radius:10px;box-shadow:0 0 20px var(--accent-gold-glow);pointer-events:none;transition:all .2s}
+#camera-overlay{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding-bottom:15px;background:radial-gradient(circle,transparent 50%,rgba(0,0,0,.7) 100%);pointer-events:none}
+#target-box{width:90%;height:80px;border:2px dashed var(--accent-gold);background:rgba(251,191,36,.15);border-radius:10px;box-shadow:0 0 20px var(--accent-gold-glow);pointer-events:none;transition:all .2s}
 #target-box.read-success{border-color:var(--color-success);background:rgba(16,185,129,.3);box-shadow:0 0 30px rgba(16,185,129,.6)}
 #flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .25s}
 .scan-feed{display:flex;gap:8px;overflow-x:auto;padding:10px 0;margin-top:10px}
@@ -45,7 +45,7 @@ td input,td select{padding:6px;width:100%;font-size:.85rem}
 
 <header>
   <div class="brand-logo">⚡ PokeVault Zero</div>
-  <span class="badge" style="border:1px solid var(--color-success);color:var(--color-success)">ULTIMATE STREAM</span>
+  <span class="badge" style="border:1px solid var(--color-success);color:var(--color-success)">ITALIAN STREAM</span>
 </header>
 
 <div class="content-box">
@@ -112,7 +112,7 @@ const saveAndRefreshList = () => {
   renderCollectionTable();
 };
 
-/* --- Archivio foto (IndexedDB: leggero e capiente, funziona su Android e iPhone) --- */
+/* --- Archivio foto (IndexedDB) --- */
 const dbp = new Promise((res, rej) => {
   const r = indexedDB.open('pokevault', 1);
   r.onupgradeneeded = () => r.result.createObjectStore('photos', { keyPath: 'id' });
@@ -135,7 +135,7 @@ async function photoURL(id) {
   const p = await getPhoto(id);
   return p ? (urlCache[id] = URL.createObjectURL(p.blob)) : null;
 }
-// foto scattate ma non ancora riconosciute
+
 let pending = [];
 try { pending = JSON.parse(localStorage.getItem('pokevault_pending') || '[]'); } catch (e) {}
 function savePending() {
@@ -155,12 +155,15 @@ function playSuccessBeep() {
   } catch (e) {}
 }
 
-/* --- OCR & Otsu Preprocessing --- */
+/* --- OCR & Preprocessing Ottimizzato --- */
 let tesseractWorker = null;
 async function getOCRWorker() {
   if (!tesseractWorker) {
     tesseractWorker = await Tesseract.createWorker('eng');
-    await tesseractWorker.setParameters({ tessedit_char_whitelist: '0123456789/', tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT });
+    await tesseractWorker.setParameters({ 
+      tessedit_char_whitelist: '0123456789/', 
+      tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT 
+    });
   }
   return tesseractWorker;
 }
@@ -189,38 +192,54 @@ function applyOtsuThresholding(context, width, height) {
   context.putImageData(imgData, 0, 0);
 }
 
-const REG=[[0,.78,.5,.22],[.5,.78,.5,.22]], REG2=[[0,.6,.5,.4],[.5,.6,.5,.4],[0,0,1,1]];
+// Riduzione dell'area di analisi per maggiore precisione e velocità
+const REG = [[0, 0.60, 1.0, 0.40]];
+const REG2 = [[0, 0.60, 0.5, 0.40], [0.5, 0.60, 0.5, 0.40], [0, 0, 1, 1]];
 let lastOCRText = '';
+
 function prepRegion(src, sw, sh, [fx, fy, fw, fh], mode) {
-  const cw = sw * fw, ch = sh * fh, k0 = 1000 / cw, c = document.createElement('canvas');
-  c.width = Math.round(cw * k0); c.height = Math.round(ch * k0);
+  const cw = sw * fw, ch = sh * fh;
+  // Limita la risoluzione massima a 600px per velocizzare l'OCR
+  const targetW = Math.min(600, cw);
+  const scale = targetW / cw;
+  const c = document.createElement('canvas'); 
+  c.width = targetW; 
+  c.height = Math.round(ch * scale);
   const x = c.getContext('2d', { willReadFrequently: true });
   x.drawImage(src, sw * fx, sh * fy, cw, ch, 0, 0, c.width, c.height);
+  
   if (mode === 2) { applyOtsuThresholding(x, c.width, c.height); return c; }
+  
   const d = x.getImageData(0, 0, c.width, c.height), p = d.data; let lo = 255, hi = 0;
   for (let i = 0; i < p.length; i += 4) { const g = .3 * p[i] + .59 * p[i+1] + .11 * p[i+2]; p[i] = g; if (g < lo) lo = g; if (g > hi) hi = g; }
   const k = 255 / Math.max(hi - lo, 1);
   for (let i = 0; i < p.length; i += 4) { let g = (p[i] - lo) * k; if (mode === 1) g = 255 - g; p[i] = p[i+1] = p[i+2] = g; }
   x.putImageData(d, 0, 0); return c;
 }
-// deep=false: veloce (dal vivo). deep=true: più ritagli, immagine invertita, soglia Otsu (foto in coda)
+
 let lastGuess = '';
 async function scanCardNumber(src, sw, sh, deep = false) {
   const worker = await getOCRWorker(), votes = {}; lastGuess = '';
-  for (const r of (deep ? [...REG, ...REG2] : REG)) for (const m of (deep ? [0, 1, 2] : [0])) {
-    const t = (await worker.recognize(prepRegion(src, sw, sh, r, m))).data.text; lastOCRText = t;
-    const x = t.match(/(\d{1,3})\s*\/\s*(\d{2,3})/);
-    if (!x) continue;
-    const code = (+x[1]) + '/' + (+x[2]);
-    if (!deep) return code;
-    votes[code] = (votes[code] || 0) + 1;
-    if (votes[code] >= 2) return code;
-    if (!lastGuess) lastGuess = code;
+  const regionsToScan = deep ? [...REG, ...REG2] : REG;
+  const modesToScan = deep ? [0, 1, 2] : [0];
+
+  for (const r of regionsToScan) {
+    for (const m of modesToScan) {
+      const t = (await worker.recognize(prepRegion(src, sw, sh, r, m))).data.text; 
+      lastOCRText = t;
+      const x = t.match(/(\d{1,3})\s*\/\s*(\d{2,3})/);
+      if (!x) continue;
+      const code = (+x[1]) + '/' + (+x[2]);
+      if (!deep) return code;
+      votes[code] = (votes[code] || 0) + 1;
+      if (votes[code] >= 2) return code;
+      if (!lastGuess) lastGuess = code;
+    }
   }
   return '';
 }
 
-/* --- Lettura AI opzionale (chiave salvata solo su questo telefono) --- */
+/* --- Lettura AI --- */
 try { getEl('api-key').value = localStorage.getItem('pokevault_key') || ''; } catch (e) {}
 getEl('api-key').onchange = () => { try { localStorage.setItem('pokevault_key', getEl('api-key').value.trim()); } catch (e) {} };
 async function readAI(blob) {
@@ -232,288 +251,6 @@ async function readAI(blob) {
     headers: { 'content-type': 'application/json', 'x-api-key': getEl('api-key').value.trim(), 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
     body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 150, messages: [{ role: 'user', content: [
       { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data } },
-      { type: 'text', text: 'Questa è una carta Pokémon. Rispondi SOLO con JSON: {"name":"nome inglese della carta","number":"numero di collezione es. 025","total":"totale del set es. 165"}. Usa "" per ciò che non riesci a leggere.' }] }] }) });
+      { type: 'text', text: 'Questa è una carta Pokémon. Rispondi SOLO con JSON: {"name":"nome della carta","number":"numero di collezione es. 025","total":"totale del set es. 165"}. Usa "" per ciò che non riesci a leggere.' }] }] }) });
   const j = await r.json(); if (!r.ok) throw new Error(j.error?.message || r.status);
-  const o = JSON.parse(j.content[0].text.replace(/```json|```/g, '').trim());
-  const n = String(o.number || '').match(/^\d+$/), t = String(o.total || '').match(/^\d+$/);
-  return { code: n && t ? (+n[0]) + '/' + (+t[0]) : '', name: o.name || '' };
-}
-
-/* --- TCGdex API Integration --- */
-let cachedSetDatabase = null;
-async function fetchJSONData(url) {
-  try { const response = await fetch(url); return response.ok ? await response.json() : null; } catch (e) { return null; }
-}
-
-async function searchAndAddCard(cardNumberString, cardNameString = '', photoId = null) {
-  const API_BASE_URL = 'https://api.tcgdex.net/v2/en/';
-  const match = cardNumberString ? cardNumberString.match(/(\d+)\/(\d+)/) : null;
-  try {
-    let cardDetails = null;
-    if (match) {
-      const cardLocalNumber = +match[1], setTotalCount = +match[2];
-      if (!cachedSetDatabase) cachedSetDatabase = await fetchJSONData(API_BASE_URL + 'sets') || [];
-      const matchingSets = cachedSetDatabase.filter(set => set.cardCount && (set.cardCount.official === setTotalCount || set.cardCount.total === setTotalCount));
-      const want = cardNameString.toLowerCase();
-      const same = n => { n = n.toLowerCase(); return n.includes(want) || want.includes(n); };
-      for (const setItem of matchingSets) {
-        let c = null;
-        for (const formattedId of [String(cardLocalNumber).padStart(3, '0'), String(cardLocalNumber)]) {
-          c = await fetchJSONData(API_BASE_URL + 'cards/' + setItem.id + '-' + formattedId);
-          if (c) break;
-        }
-        if (!c) continue;
-        if (!cardDetails) cardDetails = c;
-        if (want && same(c.name)) { cardDetails = c; break; }
-      }
-      if (want && cardDetails && !same(cardDetails.name)) cardDetails = null;
-    } else if (cardNameString) {
-      const searchResults = await fetchJSONData(API_BASE_URL + 'cards?name=' + encodeURIComponent(cardNameString) + '&pagination:page=1&pagination:itemsPerPage=1');
-      if (searchResults && searchResults.length > 0) cardDetails = await fetchJSONData(API_BASE_URL + 'cards/' + searchResults[0].id);
-    }
-    if (cardDetails) {
-      const pricingInfo = (cardDetails.pricing && cardDetails.pricing.cardmarket) || {};
-      const marketPrice = pricingInfo.trend ?? pricingInfo['trend-holo'] ?? 0;
-      const officialTotal = cardDetails.set && cardDetails.set.cardCount ? cardDetails.set.cardCount.official : '—';
-      collectionList.push({ name: cardDetails.name, set: cardDetails.set ? cardDetails.set.name : '', num: cardDetails.localId + '/' + officialTotal, cond: 'NM', mkt: marketPrice, val: marketPrice, photo: photoId });
-      saveAndRefreshList();
-      if (cardDetails.image && !photoId) {
-        const previewImg = document.createElement('img');
-        previewImg.src = cardDetails.image + '/low.webp';
-        getEl('preview-feed').prepend(previewImg);
-      }
-      getEl('status-message').textContent = `✅ Aggiunta: ${cardDetails.name} (${cardDetails.localId}/${officialTotal})`;
-      return true;
-    }
-    getEl('status-message').textContent = `❌ Nessuna carta trovata con i parametri inseriti.`;
-    return false;
-  } catch (err) {
-    getEl('status-message').textContent = `⚠️ Errore di ricerca: ${err.message}`;
-    return false;
-  }
-}
-
-/* --- Scansione continua (OCR dal vivo) --- */
-let mediaStream = null, scanIntervalTimer = 0, isProcessingFrame = false, lastDetectedCode = '', lastDetectionTimestamp = 0;
-
-function stopContinuousScan() {
-  clearInterval(scanIntervalTimer);
-  if (mediaStream) mediaStream.getTracks().forEach(track => track.stop());
-  mediaStream = null;
-  getEl('camera-wrapper').hidden = true;
-  getEl('camera-wrapper').classList.remove('is-scanning');
-  getEl('btn-toggle-stream').textContent = '⚡ AVVIA MULTI-SCANSIONE CONTINUA';
-  getEl('btn-toggle-stream').className = 'btn-turbo';
-}
-
-getEl('btn-toggle-stream').onclick = async () => {
-  audioContext.resume && audioContext.resume();
-  if (mediaStream) { stopContinuousScan(); return; }
-  if (bStream) stopBurst();
-  try {
-    mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 } } });
-  } catch (err) { alert('Impossibile accedere alla fotocamera: ' + err.message); return; }
-  const videoElement = getEl('video-preview');
-  getEl('camera-wrapper').hidden = false;
-  getEl('camera-wrapper').classList.add('is-scanning');
-  getEl('btn-toggle-stream').textContent = '⏹ FERMA SCANSIONE';
-  getEl('btn-toggle-stream').className = 'btn-primary';
-  videoElement.srcObject = mediaStream;
-  await videoElement.play();
-  getEl('status-message').textContent = '🔥 Scansione attiva: passa le carte una dietro l\'altra!';
-  await getOCRWorker();
-  scanIntervalTimer = setInterval(async () => {
-    if (isProcessingFrame || !mediaStream || !videoElement.videoWidth) return;
-    isProcessingFrame = true;
-    try {
-      const detectedCode = await scanCardNumber(videoElement, videoElement.videoWidth, videoElement.videoHeight);
-      const now = Date.now();
-      if (detectedCode && (detectedCode !== lastDetectedCode || (now - lastDetectionTimestamp) > 2500)) {
-        lastDetectedCode = detectedCode; lastDetectionTimestamp = now;
-        playSuccessBeep();
-        if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
-        const targetBox = getEl('target-box');
-        targetBox.classList.add('read-success');
-        setTimeout(() => targetBox.classList.remove('read-success'), 300);
-        getEl('status-message').textContent = `⚡ Trovato ${detectedCode}! Inserito nel registro.`;
-        searchAndAddCard(detectedCode, '');
-      }
-    } catch (e) {}
-    isProcessingFrame = false;
-  }, 400);
-};
-
-/* --- Scatto a raffica: foto automatiche quando la carta è ferma e cambia --- */
-let bStream = null, bTimer = 0, shooting = false, prevSig = null, lastSig = null, still = 0, shots = 0;
-const sigCanvas = document.createElement('canvas'); sigCanvas.width = sigCanvas.height = 48;
-const sigCtx = sigCanvas.getContext('2d', { willReadFrequently: true });
-function frameSig(v) {
-  sigCtx.drawImage(v, 0, 0, 48, 48);
-  const d = sigCtx.getImageData(0, 0, 48, 48).data, a = [];
-  for (let i = 0; i < d.length; i += 4) a.push(d[i] * .3 + d[i+1] * .59 + d[i+2] * .11);
-  return a;
-}
-const sigDiff = (a, b) => { if (!a || !b) return 999; let s = 0; for (let i = 0; i < a.length; i++) s += Math.abs(a[i] - b[i]); return s / a.length; };
-const sigSpread = a => { const m = a.reduce((x, y) => x + y, 0) / a.length; return Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / a.length); };
-
-async function shoot(v) {
-  if (shooting || !v.videoWidth) return;
-  shooting = true;
-  try {
-    let still0 = null;
-    try { if (window.ImageCapture) still0 = await new ImageCapture(bStream.getVideoTracks()[0]).takePhoto(); } catch (e) {}
-    const bmp0 = still0 ? await createImageBitmap(still0) : null;
-    const sw = bmp0 ? bmp0.width : v.videoWidth, sh = bmp0 ? bmp0.height : v.videoHeight, kk = Math.min(1, 2400 / Math.max(sw, sh));
-    const c = document.createElement('canvas'); c.width = Math.round(sw * kk); c.height = Math.round(sh * kk);
-    c.getContext('2d').drawImage(bmp0 || v, 0, 0, c.width, c.height);
-    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.85));
-    const id = Date.now() + '-' + Math.random().toString(36).slice(2, 6);
-    await putPhoto({ id, blob });
-    pending.push(id); savePending(); shots++;
-    const img = document.createElement('img'); img.src = await photoURL(id);
-    getEl('preview-feed').prepend(img);
-    const f = getEl('flash'); f.style.opacity = .7; setTimeout(() => f.style.opacity = 0, 120);
-    playSuccessBeep(); if (navigator.vibrate) navigator.vibrate(50);
-    getEl('status-message').textContent = `📸 ${shots} foto scattate (${pending.length} da riconoscere). Cambia carta!`;
-  } catch (e) { getEl('status-message').textContent = '⚠️ Salvataggio foto fallito: ' + e.message; }
-  shooting = false;
-}
-
-function stopBurst() {
-  clearInterval(bTimer);
-  if (bStream) bStream.getTracks().forEach(t => t.stop());
-  bStream = null; prevSig = lastSig = null; still = 0;
-  getEl('camera-wrapper').hidden = true; getEl('camera-wrapper').classList.remove('is-scanning');
-  getEl('btn-burst').textContent = '📸 SCATTO A RAFFICA';
-}
-
-getEl('btn-burst').onclick = async () => {
-  audioContext.resume && audioContext.resume();
-  if (bStream) { stopBurst(); return; }
-  if (mediaStream) stopContinuousScan();
-  try {
-    bStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 } } });
-  } catch (err) { alert('Impossibile accedere alla fotocamera: ' + err.message); return; }
-  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
-  try { await bStream.getVideoTracks()[0].applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch (e) {}
-  const v = getEl('video-preview');
-  getEl('camera-wrapper').hidden = false; getEl('camera-wrapper').classList.add('is-scanning');
-  getEl('btn-burst').textContent = '⏹ FERMA RAFFICA';
-  v.srcObject = bStream; v.muted = true;
-  try { await v.play(); } catch (e) {}
-  v.onclick = () => shoot(v); // tocca lo schermo per scattare a mano
-  getEl('status-message').textContent = '📸 Tieni ferma ogni carta un istante: scatto da solo. Puoi anche toccare il video.';
-  bTimer = setInterval(() => {
-    if (!bStream || !v.videoWidth || shooting) return;
-    const s = frameSig(v), moving = sigDiff(s, prevSig) >= 4; prevSig = s;
-    if (moving) { still = 0; return; }
-    if (++still === 3) {
-      const ok = sigSpread(s) > 25 && sigDiff(s, lastSig) > 12;
-      lastSig = s;
-      if (ok) shoot(v);
-    }
-  }, 250);
-};
-
-/* --- Riconoscimento delle foto in coda --- */
-let selPhoto = null; const guesses = {};
-function renderPending() {
-  const f = getEl('pending-feed'); f.innerHTML = '';
-  pending.forEach(id => {
-    const im = document.createElement('img');
-    im.style.opacity = id === selPhoto ? 1 : .6; im.style.outline = id === selPhoto ? '2px solid var(--accent-gold)' : 'none';
-    photoURL(id).then(u => { if (u) im.src = u; });
-    im.onclick = () => { selPhoto = id; renderPending(); if (guesses[id]) getEl('input-manual-num').value = guesses[id]; getEl('status-message').textContent = 'Foto selezionata: controlla il numero sulla carta, correggilo se serve e premi Cerca.'; };
-    f.append(im);
-  });
-}
-getEl('btn-process').onclick = async () => {
-  if (!pending.length) { getEl('status-message').textContent = 'Nessuna foto in coda.'; return; }
-  if (bStream) stopBurst();
-  const key = getEl('api-key').value.trim(), queue = [...pending]; let ok = 0, ko = 0, why = '';
-  for (const id of queue) {
-    getEl('status-message').textContent = `🔎 Riconosco ${ok + ko + 1}/${queue.length}…`;
-    try {
-      const p = await getPhoto(id);
-      if (!p) { pending = pending.filter(x => x !== id); continue; }
-      let done = false;
-      if (key) {
-        try {
-          const r = await readAI(p.blob);
-          if (r.code) done = await searchAndAddCard(r.code, r.name, id);
-          if (!done && r.name) done = await searchAndAddCard('', r.name, id);
-        } catch (e) { why = 'AI: ' + e.message; }
-      }
-      if (!done) {
-        const bmp = await createImageBitmap(p.blob);
-        const code = await scanCardNumber(bmp, bmp.width, bmp.height, true);
-        if (code) done = await searchAndAddCard(code, '', id);
-        else { if (lastGuess) guesses[id] = lastGuess; why = lastGuess ? 'lettura non sicura (' + lastGuess + '), da controllare' : 'OCR vede: "' + lastOCRText.replace(/\s+/g, ' ').trim().slice(0, 30) + '"'; }
-      }
-      if (done) { pending = pending.filter(x => x !== id); ok++; } else ko++;
-    } catch (e) { ko++; why = e.message; }
-    savePending();
-  }
-  getEl('status-message').textContent = `Fatto: ${ok} riconosciute, ${ko} no.` + (ko ? ` Tocca le foto rimaste per correggerle a mano. (${why})` : '');
-};
-
-getEl('btn-manual-search').onclick = async () => {
-  const manualName = getEl('input-manual-name').value.trim(), manualNum = getEl('input-manual-num').value.trim();
-  if (!manualName && !manualNum) { alert('Inserisci un numero o un nome.'); return; }
-  const ok = await searchAndAddCard(manualNum, manualName, selPhoto);
-  if (ok) {
-    if (selPhoto) { pending = pending.filter(x => x !== selPhoto); selPhoto = null; savePending(); }
-    getEl('input-manual-num').value = ''; getEl('input-manual-name').value = '';
-  }
-};
-
-/* --- Rendering Table con Filtro --- */
-function renderCollectionTable() {
-  const tableBody = getEl('collection-list-body');
-  tableBody.innerHTML = '';
-  let totalMarketValue = 0, totalSalesValue = 0;
-  const filterQuery = getEl('search-filter').value.toLowerCase().trim();
-  collectionList.forEach((cardItem, index) => {
-    totalMarketValue += (cardItem.mkt || 0);
-    totalSalesValue += (cardItem.val || 0);
-    if (filterQuery && !cardItem.name.toLowerCase().includes(filterQuery) && !cardItem.set.toLowerCase().includes(filterQuery)) return;
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${cardItem.photo ? '<img class="th" alt="">' : ''}<b>${cardItem.name}</b><br><span class="badge">${cardItem.set} ${cardItem.num}</span></td>
-      <td><select style="background:transparent">${['NM','EX','GD','PL','PO'].map(cond => `<option ${cond === cardItem.cond ? 'selected' : ''} style="background:#111827">${cond}</option>`).join('')}</select></td>
-      <td><input type="number" step="0.5" class="input-mkt" value="${cardItem.mkt ?? ''}" style="background:transparent"></td>
-      <td><input type="number" step="0.5" class="input-val" value="${cardItem.val ?? ''}" style="background:transparent"></td>
-      <td><button class="btn-delete" style="border:none;background:transparent;color:var(--color-danger)">✕</button></td>`;
-    const th = row.querySelector('.th');
-    if (th) { photoURL(cardItem.photo).then(u => { if (u) th.src = u; }); th.onclick = () => { getEl('lightbox').firstElementChild.src = th.src; getEl('lightbox').hidden = false; }; }
-    row.querySelector('select').onchange = e => { cardItem.cond = e.target.value; saveAndRefreshList(); };
-    row.querySelector('.input-mkt').onchange = e => { cardItem.mkt = e.target.value === '' ? 0 : Number(e.target.value); saveAndRefreshList(); };
-    row.querySelector('.input-val').onchange = e => { cardItem.val = e.target.value === '' ? null : Number(e.target.value); saveAndRefreshList(); };
-    row.querySelector('.btn-delete').onclick = () => { if (cardItem.photo) delPhoto(cardItem.photo); collectionList.splice(index, 1); saveAndRefreshList(); };
-    tableBody.append(row);
-  });
-  getEl('stat-count').textContent = collectionList.length;
-  getEl('stat-market-value').textContent = formatEuro(totalMarketValue);
-  getEl('stat-sale-total').textContent = formatEuro(totalSalesValue);
-}
-getEl('search-filter').oninput = renderCollectionTable;
-getEl('lightbox').onclick = () => { getEl('lightbox').hidden = true; };
-
-/* --- Export & Data Actions --- */
-getEl('btn-export-csv').onclick = () => {
-  const rows = [['Nome Carta','Set','Numero','Condizione','Prezzo Mercato','Prezzo Vendita'], ...collectionList.map(c => [c.name, c.set, c.num, c.cond, c.mkt ?? '', c.val ?? ''])];
-  const csv = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(';')).join('\n');
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })); a.download = 'Collezione_PokeVault.csv'; a.click();
-};
-getEl('btn-print-pdf').onclick = () => window.print();
-getEl('btn-clear-all').onclick = () => {
-  if (confirm('Vuoi davvero cancellare l\'intera collezione e tutte le foto salvate nel dispositivo?')) {
-    collectionList = []; pending = []; clrPhotos(); savePending(); saveAndRefreshList();
-  }
-};
-
-savePending();
-renderCollectionTable();
-</script>
-</body>
-</html>
+  const o = JSON.parse(j.content[0].text.replace(/```json|
