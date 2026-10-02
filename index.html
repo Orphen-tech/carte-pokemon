@@ -2,7 +2,7 @@
 <html lang="it">
 <head>
 <meta charset="utf-8">
-<!-- Configurazione del Viewport per adattarsi perfettamente agli schermi mobile (inclusi i notch) -->
+<!-- Configurazione del Viewport mobile -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#030712">
 <title>PokeVault Zero — Ultimate Edition</title>
@@ -22,10 +22,8 @@
   --border-radius:16px;
 }
 
-/* Rimuove l'evidenziazione blu al tocco su Android e iOS */
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 
-/* Stili del corpo pagina con sfondi a gradiente */
 body{
   margin:0;
   padding:16px;
@@ -38,7 +36,6 @@ body{
   font:15px/1.5 system-ui,-apple-system,sans-serif;
 }
 
-/* Intestazione principale */
 header{
   display:flex;
   align-items:center;
@@ -59,7 +56,6 @@ header{
   -webkit-text-fill-color:transparent;
 }
 
-/* Contenitori e schede con effetto vetro smerigliato */
 .content-box{
   background:var(--panel-bg);
   backdrop-filter:blur(16px);
@@ -70,7 +66,6 @@ header{
   box-shadow:0 8px 24px rgba(0,0,0,.3);
 }
 
-/* Stili per campi di input, selezioni e pulsanti */
 button,input,select{
   font:inherit;
   color:inherit;
@@ -83,16 +78,13 @@ button,input,select{
 button{cursor:pointer;font-weight:700}
 button:active{transform:scale(.97)}
 
-/* Varianti grafiche dei pulsanti */
 .btn-primary{background:linear-gradient(135deg,#ef4444,#b91c1c);border:none;color:#fff}
 .btn-secondary{background:linear-gradient(135deg,#3b82f6,#1d4ed8);border:none;color:#fff}
 .btn-turbo{background:linear-gradient(135deg,#10b981,#047857);border:none;color:#fff;box-shadow:0 4px 20px rgba(16,185,129,.4)}
 
-/* Disposizione flessibile su righe */
 .row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 .row input{flex:1;min-width:130px}
 
-/* Riquadro del mirino fotocamera */
 #camera-wrapper{
   position:relative;
   margin-top:12px;
@@ -106,7 +98,6 @@ button:active{transform:scale(.97)}
 #camera-wrapper.is-scanning{border-color:var(--color-success);box-shadow:0 0 20px rgba(16,185,129,.3)}
 #video-preview{width:100%;height:100%;object-fit:cover}
 
-/* Overlay grafico sopra il video della fotocamera */
 #camera-overlay{
   position:absolute;
   inset:0;
@@ -119,8 +110,8 @@ button:active{transform:scale(.97)}
   pointer-events:none;
 }
 #target-box{
-  width:90%;
-  height:80px;
+  width:95%;
+  height:90px;
   border:2px dashed var(--accent-gold);
   background:rgba(251,191,36,.15);
   border-radius:10px;
@@ -135,24 +126,20 @@ button:active{transform:scale(.97)}
 }
 #flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .25s}
 
-/* Feed scorrevole per anteprime delle immagini */
 .scan-feed{display:flex;gap:8px;overflow-x:auto;padding:10px 0;margin-top:10px}
 .scan-feed img{height:70px;border-radius:6px;border:1px solid var(--panel-border);animation:popIn .2s ease}
 
-/* Griglia delle statistiche in alto */
 .stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
 .stat-card{background:var(--panel-bg);border:1px solid var(--panel-border);border-radius:var(--border-radius);padding:12px;text-align:center}
 .stat-value{font-size:1.25rem;font-weight:800;color:var(--accent-gold)}
 .stat-label{font-size:.7rem;color:var(--text-muted);text-transform:uppercase}
 
-/* Tabella principale della collezione */
 table{width:100%;border-collapse:collapse;background:var(--panel-bg);border-radius:var(--border-radius);overflow:hidden}
 td,th{padding:10px 12px;border-bottom:1px solid var(--panel-border);text-align:left;font-size:.85rem}
 td input,td select{padding:6px;width:100%;font-size:.85rem}
 .th{width:34px;border-radius:4px;vertical-align:middle;margin-right:6px}
 .badge{font-size:.7rem;padding:2px 8px;border-radius:20px;background:rgba(255,255,255,.08);color:var(--text-muted)}
 
-/* Modale visualizzatore immagine a schermo intero (Lightbox) */
 #lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;z-index:9}
 #lightbox[hidden]{display:none}
 #lightbox img{max-width:96%;max-height:96%}
@@ -162,15 +149,12 @@ td input,td select{padding:6px;width:100%;font-size:.85rem}
 </head>
 <body>
 
-<!-- INTESTAZIONE PRINCIPALE -->
 <header>
   <div class="brand-logo">⚡ PokeVault Zero</div>
-  <span class="badge" style="border:1px solid var(--color-success);color:var(--color-success)">ITALIAN STREAM</span>
+  <span class="badge" style="border:1px solid var(--color-success);color:var(--color-success)">ITALIAN ENGINE</span>
 </header>
 
-<!-- PANNELLO DI SCANSIONE E CONTROLLI -->
 <div class="content-box">
-  <!-- Avvio scansione continua dal vivo -->
   <button id="btn-toggle-stream" class="btn-turbo" style="width:100%;font-size:1rem;padding:14px">⚡ AVVIA MULTI-SCANSIONE CONTINUA</button>
   
   <div class="row">
@@ -178,123 +162,94 @@ td input,td select{padding:6px;width:100%;font-size:.85rem}
     <button id="btn-process" style="flex:1">🔎 Riconosci foto</button>
   </div>
 
-  <!-- Vista fotocamera nascosta di default -->
   <div id="camera-wrapper" hidden>
     <video id="video-preview" autoplay playsinline muted></video>
     <div id="camera-overlay"><div id="target-box"></div></div>
     <div id="flash"></div>
   </div>
 
-  <!-- Messaggio di stato dinamico per l'utente -->
   <p id="status-message" style="margin-top:10px;font-size:.85rem;color:var(--text-muted)">
-    Scansiona in sequenza rapida, scatta a raffica oppure inserisci i dati manualmente sotto.
+    Scansiona in sequenza rapida o inserisci il nome/numero manualmente sotto.
   </p>
 
-  <!-- Ricerca manuale se l'OCR non legge la carta -->
+  <!-- Ricerca manuale universale -->
   <div class="row">
-    <input id="input-manual-name" placeholder="Nome (es. Charizard, opzionale)">
-    <input id="input-manual-num" placeholder="Numero es. 025/165">
+    <input id="input-manual-name" placeholder="Nome carta (es. Charizard, Pikachu)">
+    <input id="input-manual-num" placeholder="Numero (es. 025/165 oppure 25)">
     <button id="btn-manual-search" class="btn-secondary" style="min-width:90px">Cerca</button>
   </div>
 
-  <!-- Feed scatti effettuati -->
   <div id="preview-feed" class="scan-feed"></div>
-  
-  <!-- Coda delle foto scattate da elaborare -->
   <div id="pending-feed" class="scan-feed" title="Foto in coda: tocca per correggere a mano"></div>
 </div>
 
-<!-- RIEPILOGO STATISTICHE -->
 <div class="stats-grid">
   <div class="stat-card"><div id="stat-count" class="stat-value">0</div><div class="stat-label">Carte Salvate</div></div>
   <div class="stat-card"><div id="stat-market-value" class="stat-value">0.00 €</div><div class="stat-label">Valore di Mercato</div></div>
   <div class="stat-card"><div id="stat-sale-total" class="stat-value" style="color:var(--color-success)">0.00 €</div><div class="stat-label">Incasso Previsto</div></div>
 </div>
 
-<!-- CONTROLLI TABELLA E FILTRO -->
 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
   <h2 style="font-size:1.1rem;margin:0">Registro Collezione</h2>
   <input id="search-filter" placeholder="Filtra collezione..." style="padding:6px 10px;font-size:.8rem;width:160px">
 </div>
 
-<!-- TABELLA CARTE REGISTRATE -->
 <table>
   <thead><tr><th>Carta</th><th>Condizione</th><th>Mercato (€)</th><th>Mio Prezzo (€)</th><th></th></tr></thead>
   <tbody id="collection-list-body"></tbody>
 </table>
 
-<!-- AZIONI DI ESPORTAZIONE E CANCELLAZIONE -->
 <div style="display:flex;gap:10px;margin-top:20px">
   <button id="btn-export-csv">Esporta CSV</button>
   <button id="btn-print-pdf">Stampa PDF</button>
   <button id="btn-clear-all" style="margin-left:auto;border-color:var(--color-danger);color:var(--color-danger)">Svuota Lista</button>
 </div>
 
-<!-- LIGHTBOX PER ZOOM DELLE FOTO -->
 <div id="lightbox" hidden><img alt=""></div>
 
-<!-- LIBRERIA OCR TESSERACT.JS (CARICATA DA CDN) -->
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
 
 <script>
 /* ==========================================================================
-   1. FUNZIONI UTILITÀ E SALVATAGGIO LOCALE (LocalStorage)
+   1. UTILITÀ E STATO LOCALE
    ========================================================================== */
-
-// Scorciatoia per selezionare rapidamente elementi DOM tramite ID
 const getEl = id => document.getElementById(id);
-
-// Formatta un valore numerico in formato valuta Euro (es. "12.50 €")
 const formatEuro = val => (val == null || isNaN(val)) ? '—' : Number(val).toFixed(2) + ' €';
 
-// Inizializza l'array della collezione caricando eventuali dati salvati nel browser
 let collectionList = [];
 try { 
   collectionList = JSON.parse(localStorage.getItem('pokevault_ultimate_db') || '[]'); 
 } catch (e) { 
-  console.warn("Impossibile caricare la collezione dal localStorage", e); 
+  console.warn("Impossibile caricare i dati", e); 
 }
 
-// Salva lo stato corrente della collezione nel LocalStorage e aggiorna la tabella HTML
 const saveAndRefreshList = () => {
-  try { 
-    localStorage.setItem('pokevault_ultimate_db', JSON.stringify(collectionList)); 
-  } catch (e) { 
-    console.error("Errore nel salvataggio dei dati", e); 
-  }
+  try { localStorage.setItem('pokevault_ultimate_db', JSON.stringify(collectionList)); } catch (e) {}
   renderCollectionTable();
 };
 
-
 /* ==========================================================================
-   2. GESTIONE ARCHIVIO FOTO AD ALTA RISOLUZIONE (IndexedDB)
+   2. INDEXEDDB PER LE FOTO
    ========================================================================== */
-
-// Apre o crea un database IndexedDB chiamato "pokevault" per salvare le foto scattate
 const dbp = new Promise((res, rej) => {
   const r = indexedDB.open('pokevault', 1);
   r.onupgradeneeded = () => r.result.createObjectStore('photos', { keyPath: 'id' });
-  r.onsuccess = () => res(r.result); 
-  r.onerror = () => rej(r.error);
+  r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
 });
 
-// Helper per eseguire transazioni di lettura/scrittura su IndexedDB
 const tx = async (mode, fn) => {
   const db = await dbp;
   return new Promise((res, rej) => {
     const t = db.transaction('photos', mode), q = fn(t.objectStore('photos'));
-    t.oncomplete = () => res(q && q.result); 
-    t.onerror = () => rej(t.error);
+    t.oncomplete = () => res(q && q.result); t.onerror = () => rej(t.error);
   });
 };
 
-// Operazioni CRUD sulle foto salvate
 const putPhoto = p => tx('readwrite', s => s.put(p));
 const getPhoto = id => tx('readonly', s => s.get(id));
 const delPhoto = id => tx('readwrite', s => s.delete(id));
 const clrPhotos = () => tx('readwrite', s => s.clear());
 
-// Cache per evitare di rigenerare continuamente URL di oggetti blob di immagini
 const urlCache = {};
 async function photoURL(id) {
   if (urlCache[id]) return urlCache[id];
@@ -302,7 +257,6 @@ async function photoURL(id) {
   return p ? (urlCache[id] = URL.createObjectURL(p.blob)) : null;
 }
 
-// Coda delle foto scattate ma non ancora analizzate dall'OCR
 let pending = [];
 try { pending = JSON.parse(localStorage.getItem('pokevault_pending') || '[]'); } catch (e) {}
 
@@ -312,81 +266,40 @@ function savePending() {
   getEl('btn-process').textContent = pending.length ? `🔎 Riconosci ${pending.length} foto` : '🔎 Riconosci foto';
 }
 
-
 /* ==========================================================================
-   3. FEEDBACK AUDIO (Beep di lettura avvenuta)
+   3. FEEDBACK AUDIO
    ========================================================================== */
-
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 function playSuccessBeep() {
   try {
     const osc = audioContext.createOscillator(), gain = audioContext.createGain();
     osc.connect(gain); gain.connect(audioContext.destination);
-    osc.frequency.value = 880; // Frequenza audio in Hz
-    gain.gain.value = 0.1;
-    osc.start(); 
-    osc.stop(audioContext.currentTime + 0.12);
+    osc.frequency.value = 880; gain.gain.value = 0.1;
+    osc.start(); osc.stop(audioContext.currentTime + 0.12);
   } catch (e) {}
 }
 
-
 /* ==========================================================================
-   4. ELABORAZIONE IMMAGINI ED ENGINE OCR (Tesseract.js)
+   4. TESSERACT OCR AVANZATO (Con tolleranza sugli errori del simbolo "/")
    ========================================================================== */
-
 let tesseractWorker = null;
-
-// Inizializza il Worker di Tesseract configurato per leggere cifre e barre ("/")
 async function getOCRWorker() {
   if (!tesseractWorker) {
     tesseractWorker = await Tesseract.createWorker('eng');
     await tesseractWorker.setParameters({ 
-      tessedit_char_whitelist: '0123456789/', // Limita i caratteri riconosciuti per evitare falsi positivi
+      tessedit_char_whitelist: '0123456789/.-I ', 
       tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT 
     });
   }
   return tesseractWorker;
 }
 
-// Algoritmo di Binarizzazione Otsu: converte l'immagine in bianco e nero puro per un OCR ultra-nitido
-function applyOtsuThresholding(context, width, height) {
-  const imgData = context.getImageData(0, 0, width, height), data = imgData.data;
-  const histogram = new Array(256).fill(0);
-  for (let i = 0; i < data.length; i += 4) {
-    const gray = Math.round(0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2]);
-    data[i] = data[i+1] = data[i+2] = gray; 
-    histogram[gray]++;
-  }
-  let sum = 0;
-  for (let t = 0; t < 256; t++) sum += t * histogram[t];
-  let sumBackground = 0, weightBackground = 0, weightForeground = 0, maxVariance = 0, optimalThreshold = 128, totalPixels = width * height;
-  for (let t = 0; t < 256; t++) {
-    weightBackground += histogram[t];
-    if (weightBackground === 0) continue;
-    weightForeground = totalPixels - weightBackground;
-    if (weightForeground === 0) break;
-    sumBackground += t * histogram[t];
-    const meanBackground = sumBackground / weightBackground, meanForeground = (sum - sumBackground) / weightForeground;
-    const v = weightBackground * weightForeground * Math.pow(meanBackground - meanForeground, 2);
-    if (v > maxVariance) { maxVariance = v; optimalThreshold = t; }
-  }
-  for (let i = 0; i < data.length; i += 4) { 
-    const b = data[i] >= optimalThreshold ? 255 : 0; 
-    data[i] = data[i+1] = data[i+2] = b; 
-  }
-  context.putImageData(imgData, 0, 0);
-}
+// Scansione della fascia inferiore della carta
+const REG = [[0, 0.55, 1.0, 0.45]];
 
-// Definisce l'area di scansione (focus sulla fascia inferiore della carta)
-const REG = [[0, 0.60, 1.0, 0.40]];
-const REG2 = [[0, 0.60, 0.5, 0.40], [0.5, 0.60, 0.5, 0.40], [0, 0, 1, 1]];
-let lastOCRText = '';
-
-// Prepara e scala il ritaglio dell'immagine riducendo la risoluzione per massima velocità
-function prepRegion(src, sw, sh, [fx, fy, fw, fh], mode) {
+function prepRegion(src, sw, sh, [fx, fy, fw, fh]) {
   const cw = sw * fw, ch = sh * fh;
-  // Riduce a 600px la larghezza target per accelerare Tesseract di 3 volte
-  const targetW = Math.min(600, cw);
+  const targetW = Math.min(700, cw);
   const scale = targetW / cw;
   const c = document.createElement('canvas'); 
   c.width = targetW; 
@@ -394,90 +307,97 @@ function prepRegion(src, sw, sh, [fx, fy, fw, fh], mode) {
   const x = c.getContext('2d', { willReadFrequently: true });
   x.drawImage(src, sw * fx, sh * fy, cw, ch, 0, 0, c.width, c.height);
   
-  if (mode === 2) { applyOtsuThresholding(x, c.width, c.height); return c; }
-  
-  const d = x.getImageData(0, 0, c.width, c.height), p = d.data; let lo = 255, hi = 0;
-  for (let i = 0; i < p.length; i += 4) { const g = .3 * p[i] + .59 * p[i+1] + .11 * p[i+2]; p[i] = g; if (g < lo) lo = g; if (g > hi) hi = g; }
+  const d = x.getImageData(0, 0, c.width, c.height), p = d.data; 
+  let lo = 255, hi = 0;
+  for (let i = 0; i < p.length; i += 4) { 
+    const g = .3 * p[i] + .59 * p[i+1] + .11 * p[i+2]; 
+    p[i] = g; 
+    if (g < lo) lo = g; 
+    if (g > hi) hi = g; 
+  }
   const k = 255 / Math.max(hi - lo, 1);
-  for (let i = 0; i < p.length; i += 4) { let g = (p[i] - lo) * k; if (mode === 1) g = 255 - g; p[i] = p[i+1] = p[i+2] = g; }
-  x.putImageData(d, 0, 0); return c;
+  for (let i = 0; i < p.length; i += 4) { 
+    let g = (p[i] - lo) * k; 
+    p[i] = p[i+1] = p[i+2] = g; 
+  }
+  x.putImageData(d, 0, 0); 
+  return c;
 }
 
-let lastGuess = '';
-
-// Esegue la scansione OCR cercando il pattern del numero carta (es. "025/165")
-async function scanCardNumber(src, sw, sh, deep = false) {
-  const worker = await getOCRWorker(), votes = {}; lastGuess = '';
-  const regionsToScan = deep ? [...REG, ...REG2] : REG;
-  const modesToScan = deep ? [0, 1, 2] : [0];
-
-  for (const r of regionsToScan) {
-    for (const m of modesToScan) {
-      const t = (await worker.recognize(prepRegion(src, sw, sh, r, m))).data.text; 
-      lastOCRText = t;
-      const x = t.match(/(\d{1,3})\s*\/\s*(\d{2,3})/);
-      if (!x) continue;
-      const code = (+x[1]) + '/' + (+x[2]);
-      if (!deep) return code;
-      votes[code] = (votes[code] || 0) + 1;
-      if (votes[code] >= 2) return code;
-      if (!lastGuess) lastGuess = code;
+let lastOCRText = '';
+async function scanCardNumber(src, sw, sh) {
+  const worker = await getOCRWorker();
+  for (const r of REG) {
+    const t = (await worker.recognize(prepRegion(src, sw, sh, r))).data.text; 
+    lastOCRText = t;
+    
+    // Regex tollerante: riconosce numeri separati da /, ., spazio o "I" (es: 025/165, 025 165, 025I165)
+    const match = t.match(/(\d{1,3})\s*[\/\.\sI\-]\s*(\d{2,3})/);
+    if (match) {
+      return (+match[1]) + '/' + (+match[2]);
     }
   }
   return '';
 }
 
-
 /* ==========================================================================
-   5. INTEGRAZIONE DATABASE TCGdex (Multilingua: IT + EN Fallback)
+   5. RICERCA E AGGIUNTA CARTE (Motore multilingua potenziato)
    ========================================================================== */
-
-// Helper per scaricare dati JSON dalle API
 async function fetchJSONData(url) {
   try { const response = await fetch(url); return response.ok ? await response.json() : null; } catch (e) { return null; }
 }
 
-// Cerca la carta su TCGdex prima nel database Italiano ('it'), poi in Inglese ('en')
 async function searchAndAddCard(cardNumberString, cardNameString = '', photoId = null) {
-  const match = cardNumberString ? cardNumberString.match(/(\d+)\s*\/\s*(\d+)/) : null;
-  const languages = ['it', 'en'];
+  // Estrae numero e totale (es. 25 e 165)
+  const match = cardNumberString ? cardNumberString.match(/(\d+)\s*[\/\.\sI\-]?\s*(\d*)/) : null;
+  const numOnly = match ? match[1] : '';
+  const totalOnly = (match && match[2]) ? match[2] : '';
 
   try {
     let cardDetails = null;
 
-    for (const lang of languages) {
-      const baseUrl = `https://api.tcgdex.net/v2/${lang}/`;
+    // 1. TENTA PRIMA LA RICERCA PER NOME (se inserito dall'utente)
+    if (cardNameString) {
+      for (const lang of ['it', 'en']) {
+        const res = await fetchJSONData(`https://api.tcgdex.net/v2/${lang}/cards?name=${encodeURIComponent(cardNameString)}`);
+        if (res && res.length > 0) {
+          cardDetails = await fetchJSONData(`https://api.tcgdex.net/v2/${lang}/cards/${res[0].id}`);
+          if (cardDetails) break;
+        }
+      }
+    }
 
-      if (match) {
-        const localNum = String(+match[1]); // Converte "025" in "25" per il matching flessibile
-        const rawLocalNum = match[1];      // Mantiene "025"
-        const total = +match[2];
+    // 2. RICERCA PER NUMERO LOCALE (es. 025 o 25) SU TCGDEX ITALIANO ED INGLESE
+    if (!cardDetails && numOnly) {
+      for (const lang of ['it', 'en']) {
+        const baseUrl = `https://api.tcgdex.net/v2/${lang}/`;
+        const localNum = String(+numOnly); // Converte "025" in "25"
 
-        // Esegue la ricerca sia per numero pulito che con zeri iniziali
         const results = await fetchJSONData(`${baseUrl}cards?localId=${localNum}`) || [];
-        const altResults = (rawLocalNum !== localNum) ? (await fetchJSONData(`${baseUrl}cards?localId=${rawLocalNum}`) || []) : [];
-        const combined = [...results, ...altResults];
+        const rawResults = (numOnly !== localNum) ? (await fetchJSONData(`${baseUrl}cards?localId=${numOnly}`) || []) : [];
+        const combined = [...results, ...rawResults];
 
         for (const item of combined) {
           const detail = await fetchJSONData(`${baseUrl}cards/${item.id}`);
-          if (detail && detail.set && detail.set.cardCount && 
-             (detail.set.cardCount.official === total || detail.set.cardCount.total === total)) {
+          if (!detail) continue;
+
+          // Se abbiamo anche il totale del set (es. 165), verifica la corrispondenza
+          if (totalOnly && detail.set && detail.set.cardCount) {
+            if (detail.set.cardCount.official === +totalOnly || detail.set.cardCount.total === +totalOnly) {
+              cardDetails = detail;
+              break;
+            }
+          } else {
+            // Altrimenti prende il primo risultato disponibile
             cardDetails = detail;
             break;
           }
         }
-      } else if (cardNameString) {
-        // Ricerca per nome della carta
-        const searchResults = await fetchJSONData(`${baseUrl}cards?name=${encodeURIComponent(cardNameString)}`);
-        if (searchResults && searchResults.length > 0) {
-          cardDetails = await fetchJSONData(`${baseUrl}cards/${searchResults[0].id}`);
-        }
+        if (cardDetails) break;
       }
-
-      if (cardDetails) break; // Se trovata nel DB italiano, interrompe la ricerca
     }
 
-    // Se la carta è stata trovata, la aggiunge alla collezione dell'utente
+    // 3. SE TROVATA, AGGIUNGE ALLA COLLEZIONE
     if (cardDetails) {
       const pricingInfo = (cardDetails.pricing && cardDetails.pricing.cardmarket) || {};
       const marketPrice = pricingInfo.trend ?? pricingInfo['trend-holo'] ?? 0;
@@ -485,7 +405,7 @@ async function searchAndAddCard(cardNumberString, cardNameString = '', photoId =
 
       collectionList.push({
         name: cardDetails.name,
-        set: cardDetails.set ? cardDetails.set.name : '',
+        set: cardDetails.set ? cardDetails.set.name : 'Espansione Generica',
         num: cardDetails.localId + '/' + officialTotal,
         cond: 'NM',
         mkt: marketPrice,
@@ -495,7 +415,6 @@ async function searchAndAddCard(cardNumberString, cardNameString = '', photoId =
 
       saveAndRefreshList();
       
-      // Mostra l'anteprima dell'immagine ufficiale TCGdex nel feed
       if (cardDetails.image && !photoId) {
         const previewImg = document.createElement('img');
         previewImg.src = cardDetails.image + '/low.webp';
@@ -505,22 +424,19 @@ async function searchAndAddCard(cardNumberString, cardNameString = '', photoId =
       return true;
     }
 
-    getEl('status-message').textContent = `❌ Nessuna carta trovata per: ${cardNumberString || cardNameString}`;
+    getEl('status-message').textContent = `❌ Nessuna carta trovata con i parametri inseriti. Prova a inserire il nome in alto!`;
     return false;
   } catch (err) {
-    getEl('status-message').textContent = `⚠️ Errore di ricerca: ${err.message}`;
+    getEl('status-message').textContent = `⚠️ Errore durante la ricerca: ${err.message}`;
     return false;
   }
 }
 
-
 /* ==========================================================================
-   6. SCANSIONE CONTINUA DAL VIVO DA FOTOCAMERA
+   6. SCANSIONE CONTINUA DAL VIVO
    ========================================================================== */
-
 let mediaStream = null, scanIntervalTimer = 0, isProcessingFrame = false, lastDetectedCode = '', lastDetectionTimestamp = 0;
 
-// Interrompe il flusso della fotocamera e pulisce i timer attivi
 function stopContinuousScan() {
   clearInterval(scanIntervalTimer);
   if (mediaStream) mediaStream.getTracks().forEach(track => track.stop());
@@ -531,7 +447,6 @@ function stopContinuousScan() {
   getEl('btn-toggle-stream').className = 'btn-turbo';
 }
 
-// Gestore click sul pulsante di scansione continua
 getEl('btn-toggle-stream').onclick = async () => {
   audioContext.resume && audioContext.resume();
   if (mediaStream) { stopContinuousScan(); return; }
@@ -548,10 +463,9 @@ getEl('btn-toggle-stream').onclick = async () => {
   getEl('btn-toggle-stream').className = 'btn-primary';
   videoElement.srcObject = mediaStream;
   await videoElement.play();
-  getEl('status-message').textContent = '🔥 Scansione attiva: passa le carte una dietro l\'altra!';
+  getEl('status-message').textContent = '🔥 Scansione attiva: inquadra il numero in basso sulla carta!';
   await getOCRWorker();
   
-  // Timer di scansione ottimizzato a 650ms per non sovraccaricare lo smartphone
   scanIntervalTimer = setInterval(async () => {
     if (isProcessingFrame || !mediaStream || !videoElement.videoWidth) return;
     isProcessingFrame = true;
@@ -559,7 +473,6 @@ getEl('btn-toggle-stream').onclick = async () => {
       const detectedCode = await scanCardNumber(videoElement, videoElement.videoWidth, videoElement.videoHeight);
       const now = Date.now();
       
-      // Evita doppie letture consecutive della stessa carta entro 2.5 secondi
       if (detectedCode && (detectedCode !== lastDetectedCode || (now - lastDetectionTimestamp) > 2500)) {
         lastDetectedCode = detectedCode; 
         lastDetectionTimestamp = now;
@@ -570,7 +483,7 @@ getEl('btn-toggle-stream').onclick = async () => {
         targetBox.classList.add('read-success');
         setTimeout(() => targetBox.classList.remove('read-success'), 300);
         
-        getEl('status-message').textContent = `⚡ Trovato ${detectedCode}! Inserito nel registro.`;
+        getEl('status-message').textContent = `⚡ Trovato ${detectedCode}! Ricerca in corso...`;
         searchAndAddCard(detectedCode, '');
       }
     } catch (e) {}
@@ -578,16 +491,13 @@ getEl('btn-toggle-stream').onclick = async () => {
   }, 650);
 };
 
-
 /* ==========================================================================
-   7. SCATTO A RAFFICA AUTOMATICO (Motion Detection)
+   7. SCATTO A RAFFICA ED ELABORAZIONE FOTO IN CODA
    ========================================================================== */
-
 let bStream = null, bTimer = 0, shooting = false, prevSig = null, lastSig = null, still = 0, shots = 0;
 const sigCanvas = document.createElement('canvas'); sigCanvas.width = sigCanvas.height = 48;
 const sigCtx = sigCanvas.getContext('2d', { willReadFrequently: true });
 
-// Genera una firma digitale in scala di grigi dell'immagine per rilevare se la carta è ferma
 function frameSig(v) {
   sigCtx.drawImage(v, 0, 0, 48, 48);
   const d = sigCtx.getImageData(0, 0, 48, 48).data, a = [];
@@ -598,7 +508,6 @@ function frameSig(v) {
 const sigDiff = (a, b) => { if (!a || !b) return 999; let s = 0; for (let i = 0; i < a.length; i++) s += Math.abs(a[i] - b[i]); return s / a.length; };
 const sigSpread = a => { const m = a.reduce((x, y) => x + y, 0) / a.length; return Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / a.length); };
 
-// Esegue lo scatto ad alta risoluzione e lo aggiunge alla coda
 async function shoot(v) {
   if (shooting || !v.videoWidth) return;
   shooting = true;
@@ -621,7 +530,6 @@ async function shoot(v) {
     img.src = await photoURL(id);
     getEl('preview-feed').prepend(img);
     
-    // Effetto Flash visivo
     const f = getEl('flash'); 
     f.style.opacity = .7; 
     setTimeout(() => f.style.opacity = 0, 120);
@@ -644,7 +552,6 @@ function stopBurst() {
   getEl('btn-burst').textContent = '📸 SCATTO A RAFFICA';
 }
 
-// Avvia la modalità di scatto a raffica automatico quando la mano si ferma
 getEl('btn-burst').onclick = async () => {
   audioContext.resume && audioContext.resume();
   if (bStream) { stopBurst(); return; }
@@ -653,9 +560,6 @@ getEl('btn-burst').onclick = async () => {
     bStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 } } });
   } catch (err) { alert('Impossibile accedere alla fotocamera: ' + err.message); return; }
   
-  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
-  try { await bStream.getVideoTracks()[0].applyConstraints({ advanced: [{ focusMode: 'continuous' }] }); } catch (e) {}
-  
   const v = getEl('video-preview');
   getEl('camera-wrapper').hidden = false; 
   getEl('camera-wrapper').classList.add('is-scanning');
@@ -663,7 +567,7 @@ getEl('btn-burst').onclick = async () => {
   v.srcObject = bStream; 
   v.muted = true;
   try { await v.play(); } catch (e) {}
-  v.onclick = () => shoot(v); // Permette di scattare anche toccando lo schermo
+  v.onclick = () => shoot(v);
   
   getEl('status-message').textContent = '📸 Tieni ferma ogni carta un istante: scatto da solo. Puoi anche toccare il video.';
   
@@ -679,15 +583,12 @@ getEl('btn-burst').onclick = async () => {
   }, 250);
 };
 
-
 /* ==========================================================================
-   8. PROCESSAMENTO CODA FOTO & RICERCA MANUALE
+   8. CODA FOTO & RICERCA MANUALE
    ========================================================================== */
-
 let selPhoto = null; 
 const guesses = {};
 
-// Mostra la coda delle foto scattate nella barra orizzontale
 function renderPending() {
   const f = getEl('pending-feed'); f.innerHTML = '';
   pending.forEach(id => {
@@ -699,19 +600,18 @@ function renderPending() {
       selPhoto = id; 
       renderPending(); 
       if (guesses[id]) getEl('input-manual-num').value = guesses[id]; 
-      getEl('status-message').textContent = 'Foto selezionata: controlla il numero sulla carta, correggilo se serve e premi Cerca.'; 
+      getEl('status-message').textContent = 'Foto selezionata: controlla il numero, correggilo se serve o scrivi il nome sopra e premi Cerca.'; 
     };
     f.append(im);
   });
 }
 
-// Analizza tutte le foto salvate nella coda tramite OCR
 getEl('btn-process').onclick = async () => {
   if (!pending.length) { getEl('status-message').textContent = 'Nessuna foto in coda.'; return; }
   if (bStream) stopBurst();
   
   const queue = [...pending]; 
-  let ok = 0, ko = 0, why = '';
+  let ok = 0, ko = 0;
 
   for (const id of queue) {
     getEl('status-message').textContent = `🔎 Riconosco ${ok + ko + 1}/${queue.length}…`;
@@ -719,15 +619,12 @@ getEl('btn-process').onclick = async () => {
       const p = await getPhoto(id);
       if (!p) { pending = pending.filter(x => x !== id); continue; }
       
-      let done = false;
       const bmp = await createImageBitmap(p.blob);
-      const code = await scanCardNumber(bmp, bmp.width, bmp.height, true);
+      const code = await scanCardNumber(bmp, bmp.width, bmp.height);
       
+      let done = false;
       if (code) {
         done = await searchAndAddCard(code, '', id);
-      } else { 
-        if (lastGuess) guesses[id] = lastGuess; 
-        why = lastGuess ? 'lettura non sicura (' + lastGuess + '), da controllare' : 'OCR vede: "' + lastOCRText.replace(/\s+/g, ' ').trim().slice(0, 30) + '"'; 
       }
       
       if (done) { 
@@ -738,17 +635,17 @@ getEl('btn-process').onclick = async () => {
       }
     } catch (e) { 
       ko++; 
-      why = e.message; 
     }
     savePending();
   }
-  getEl('status-message').textContent = `Fatto: ${ok} riconosciute, ${ko} no.` + (ko ? ` Tocca le foto rimaste per correggerle a mano. (${why})` : '');
+  getEl('status-message').textContent = `Fatto: ${ok} riconosciute, ${ko} non trovate. Se non le trova, scrivi il nome (es. Pikachu) nel campo in alto.`;
 };
 
-// Pulsante per la ricerca manuale
 getEl('btn-manual-search').onclick = async () => {
-  const manualName = getEl('input-manual-name').value.trim(), manualNum = getEl('input-manual-num').value.trim();
-  if (!manualName && !manualNum) { alert('Inserisci un numero o un nome.'); return; }
+  const manualName = getEl('input-manual-name').value.trim();
+  const manualNum = getEl('input-manual-num').value.trim();
+  if (!manualName && !manualNum) { alert('Inserisci un numero o un nome per cercare.'); return; }
+  
   const ok = await searchAndAddCard(manualNum, manualName, selPhoto);
   if (ok) {
     if (selPhoto) { pending = pending.filter(x => x !== selPhoto); selPhoto = null; savePending(); }
@@ -757,11 +654,9 @@ getEl('btn-manual-search').onclick = async () => {
   }
 };
 
-
 /* ==========================================================================
-   9. RENDER TABELLA E CALCOLO STATISTICHE
+   9. TABELLA E STATISTICHE
    ========================================================================== */
-
 function renderCollectionTable() {
   const tableBody = getEl('collection-list-body');
   tableBody.innerHTML = '';
@@ -772,7 +667,6 @@ function renderCollectionTable() {
     totalMarketValue += (cardItem.mkt || 0);
     totalSalesValue += (cardItem.val || 0);
 
-    // Applica il filtro di ricerca per nome o set
     if (filterQuery && !cardItem.name.toLowerCase().includes(filterQuery) && !cardItem.set.toLowerCase().includes(filterQuery)) return;
 
     const row = document.createElement('tr');
@@ -783,7 +677,6 @@ function renderCollectionTable() {
       <td><input type="number" step="0.5" class="input-val" value="${cardItem.val ?? ''}" style="background:transparent"></td>
       <td><button class="btn-delete" style="border:none;background:transparent;color:var(--color-danger)">✕</button></td>`;
 
-    // Eventi e bindings della riga
     const th = row.querySelector('.th');
     if (th) { 
       photoURL(cardItem.photo).then(u => { if (u) th.src = u; }); 
@@ -801,7 +694,6 @@ function renderCollectionTable() {
     tableBody.append(row);
   });
 
-  // Aggiorna i valori aggregati nelle schede aggregate in alto
   getEl('stat-count').textContent = collectionList.length;
   getEl('stat-market-value').textContent = formatEuro(totalMarketValue);
   getEl('stat-sale-total').textContent = formatEuro(totalSalesValue);
@@ -810,12 +702,9 @@ function renderCollectionTable() {
 getEl('search-filter').oninput = renderCollectionTable;
 getEl('lightbox').onclick = () => { getEl('lightbox').hidden = true; };
 
-
 /* ==========================================================================
-   10. ESPORTAZIONE E SVUOTAMENTO DATI
+   10. ESPORTAZIONE
    ========================================================================== */
-
-// Genera e scarica un file CSV compatibile con Excel (con UTF-8 BOM)
 getEl('btn-export-csv').onclick = () => {
   const rows = [['Nome Carta','Set','Numero','Condizione','Prezzo Mercato','Prezzo Vendita'], ...collectionList.map(c => [c.name, c.set, c.num, c.cond, c.mkt ?? '', c.val ?? ''])];
   const csv = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(';')).join('\n');
@@ -825,10 +714,8 @@ getEl('btn-export-csv').onclick = () => {
   a.click();
 };
 
-// Apre la finestra di stampa del browser (salvabile come PDF)
 getEl('btn-print-pdf').onclick = () => window.print();
 
-// Cancella completamente il database locale del browser
 getEl('btn-clear-all').onclick = () => {
   if (confirm('Vuoi davvero cancellare l\'intera collezione e tutte le foto salvate nel dispositivo?')) {
     collectionList = []; 
@@ -839,7 +726,6 @@ getEl('btn-clear-all').onclick = () => {
   }
 };
 
-/* --- AVVIO INIZIALE --- */
 savePending();
 renderCollectionTable();
 </script>
