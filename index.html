@@ -6,216 +6,144 @@
 <meta name="theme-color" content="#030712">
 <title>PokeVault Zero — Ultimate Edition</title>
 <style>
-:root {
-  --bg-color: #030712;
-  --panel-bg: rgba(17, 24, 39, 0.85);
-  --panel-border: rgba(255, 255, 255, 0.08);
-  --text-primary: #f9fafb;
-  --text-muted: #9ca3af;
-  --accent-gold: #fbbf24;
-  --accent-gold-glow: rgba(251, 191, 36, 0.4);
-  --color-danger: #ef4444;
-  --color-success: #10b981;
-  --color-info: #3b82f6;
-  --border-radius: 16px;
-}
-
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-
-body {
-  margin: 0; padding: 16px; max-width: 760px; margin-inline: auto;
-  background: var(--bg-color); color: var(--text-primary);
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.18) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(245, 158, 11, 0.15) 0px, transparent 50%);
-  background-attachment: fixed;
-  font: 15px/1.5 system-ui, -apple-system, sans-serif;
-}
-
-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 16px; padding: 14px 18px;
-  background: var(--panel-bg); backdrop-filter: blur(16px);
-  border: 1px solid var(--panel-border); border-radius: var(--border-radius);
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-}
-
-.brand-logo {
-  font-size: 1.3rem; font-weight: 900;
-  background: linear-gradient(135deg, #fbbf24, #ef4444);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-}
-
-.content-box {
-  background: var(--panel-bg); backdrop-filter: blur(16px);
-  border: 1px solid var(--panel-border); border-radius: var(--border-radius);
-  padding: 16px; margin-bottom: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-}
-
-button, input, select {
-  font: inherit; color: inherit; border: 1px solid var(--panel-border);
-  border-radius: 12px; padding: 12px 14px; background: rgba(31, 41, 55, 0.5);
-  transition: all 0.2s ease;
-}
-
-button { cursor: pointer; font-weight: 700; }
-button:active { transform: scale(0.97); }
-
-.btn-primary { background: linear-gradient(135deg, #ef4444, #b91c1c); border: none; color: #fff; }
-.btn-secondary { background: linear-gradient(135deg, #3b82f6, #1d4ed8); border: none; color: #fff; }
-.btn-turbo {
-  background: linear-gradient(135deg, #10b981, #047857); border: none; color: #fff;
-  box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
-}
-
-.row { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
-.row input { flex: 1; min-width: 130px; }
-
-#camera-wrapper {
-  position: relative; margin-top: 12px; height: 320px;
-  background: #000; border-radius: 14px; overflow: hidden;
-  border: 2px solid var(--panel-border);
-}
-#camera-wrapper.is-scanning { border-color: var(--color-success); box-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
-#video-preview { width: 100%; height: 100%; object-fit: cover; }
-
-#camera-overlay {
-  position: absolute; inset: 0; display: flex; flex-direction: column;
-  justify-content: flex-end; align-items: center; padding-bottom: 20px;
-  background: radial-gradient(circle, transparent 50%, rgba(0,0,0,0.7) 100%);
-}
-
-#target-box {
-  width: 85%; height: 65px; border: 2px dashed var(--accent-gold);
-  background: rgba(251, 191, 36, 0.15); border-radius: 10px;
-  box-shadow: 0 0 20px var(--accent-gold-glow); pointer-events: none;
-  transition: all 0.2s;
-}
-#target-box.read-success {
-  border-color: var(--color-success); background: rgba(16, 185, 129, 0.3);
-  box-shadow: 0 0 30px rgba(16, 185, 129, 0.6);
-}
-
-.scan-feed { display: flex; gap: 8px; overflow-x: auto; padding: 10px 0; margin-top: 10px; }
-.scan-feed img { height: 70px; border-radius: 6px; border: 1px solid var(--panel-border); animation: popIn 0.2s ease; }
-
-.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
-.stat-card {
-  background: var(--panel-bg); border: 1px solid var(--panel-border);
-  border-radius: var(--border-radius); padding: 12px; text-align: center;
-}
-.stat-value { font-size: 1.25rem; font-weight: 800; color: var(--accent-gold); }
-.stat-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; }
-
-table { width: 100%; border-collapse: collapse; background: var(--panel-bg); border-radius: var(--border-radius); overflow: hidden; }
-td, th { padding: 10px 12px; border-bottom: 1px solid var(--panel-border); text-align: left; font-size: 0.85rem; }
-td input, td select { padding: 6px; width: 100%; font-size: 0.85rem; }
-
-.badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; background: rgba(255,255,255,0.08); color: var(--text-muted); }
-
-@keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+:root{--bg-color:#030712;--panel-bg:rgba(17,24,39,.85);--panel-border:rgba(255,255,255,.08);--text-primary:#f9fafb;--text-muted:#9ca3af;--accent-gold:#fbbf24;--accent-gold-glow:rgba(251,191,36,.4);--color-danger:#ef4444;--color-success:#10b981;--color-info:#3b82f6;--border-radius:16px}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;padding:16px;max-width:760px;margin-inline:auto;background:var(--bg-color);color:var(--text-primary);background-image:radial-gradient(at 0% 0%,rgba(59,130,246,.18) 0px,transparent 50%),radial-gradient(at 100% 100%,rgba(245,158,11,.15) 0px,transparent 50%);background-attachment:fixed;font:15px/1.5 system-ui,-apple-system,sans-serif}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding:14px 18px;background:var(--panel-bg);backdrop-filter:blur(16px);border:1px solid var(--panel-border);border-radius:var(--border-radius);box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.brand-logo{font-size:1.3rem;font-weight:900;background:linear-gradient(135deg,#fbbf24,#ef4444);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.content-box{background:var(--panel-bg);backdrop-filter:blur(16px);border:1px solid var(--panel-border);border-radius:var(--border-radius);padding:16px;margin-bottom:20px;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+button,input,select{font:inherit;color:inherit;border:1px solid var(--panel-border);border-radius:12px;padding:12px 14px;background:rgba(31,41,55,.5);transition:all .2s ease}
+button{cursor:pointer;font-weight:700}button:active{transform:scale(.97)}
+.btn-primary{background:linear-gradient(135deg,#ef4444,#b91c1c);border:none;color:#fff}
+.btn-secondary{background:linear-gradient(135deg,#3b82f6,#1d4ed8);border:none;color:#fff}
+.btn-turbo{background:linear-gradient(135deg,#10b981,#047857);border:none;color:#fff;box-shadow:0 4px 20px rgba(16,185,129,.4)}
+.row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.row input{flex:1;min-width:130px}
+#camera-wrapper{position:relative;margin-top:12px;height:320px;background:#000;border-radius:14px;overflow:hidden;border:2px solid var(--panel-border)}
+#camera-wrapper[hidden]{display:none}
+#camera-wrapper.is-scanning{border-color:var(--color-success);box-shadow:0 0 20px rgba(16,185,129,.3)}
+#video-preview{width:100%;height:100%;object-fit:cover}
+#camera-overlay{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;padding-bottom:20px;background:radial-gradient(circle,transparent 50%,rgba(0,0,0,.7) 100%);pointer-events:none}
+#target-box{width:85%;height:65px;border:2px dashed var(--accent-gold);background:rgba(251,191,36,.15);border-radius:10px;box-shadow:0 0 20px var(--accent-gold-glow);pointer-events:none;transition:all .2s}
+#target-box.read-success{border-color:var(--color-success);background:rgba(16,185,129,.3);box-shadow:0 0 30px rgba(16,185,129,.6)}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .25s}
+.scan-feed{display:flex;gap:8px;overflow-x:auto;padding:10px 0;margin-top:10px}
+.scan-feed img{height:70px;border-radius:6px;border:1px solid var(--panel-border);animation:popIn .2s ease}
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.stat-card{background:var(--panel-bg);border:1px solid var(--panel-border);border-radius:var(--border-radius);padding:12px;text-align:center}
+.stat-value{font-size:1.25rem;font-weight:800;color:var(--accent-gold)}
+.stat-label{font-size:.7rem;color:var(--text-muted);text-transform:uppercase}
+table{width:100%;border-collapse:collapse;background:var(--panel-bg);border-radius:var(--border-radius);overflow:hidden}
+td,th{padding:10px 12px;border-bottom:1px solid var(--panel-border);text-align:left;font-size:.85rem}
+td input,td select{padding:6px;width:100%;font-size:.85rem}
+.th{width:34px;border-radius:4px;vertical-align:middle;margin-right:6px}
+.badge{font-size:.7rem;padding:2px 8px;border-radius:20px;background:rgba(255,255,255,.08);color:var(--text-muted)}
+@keyframes popIn{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
 </style>
 </head>
 <body>
 
 <header>
   <div class="brand-logo">⚡ PokeVault Zero</div>
-  <span class="badge" style="border: 1px solid var(--color-success); color: var(--color-success)">ULTIMATE STREAM</span>
+  <span class="badge" style="border:1px solid var(--color-success);color:var(--color-success)">ULTIMATE STREAM</span>
 </header>
 
 <div class="content-box">
-  <button id="btn-toggle-stream" class="btn-turbo" style="width:100%; font-size:1rem; padding:14px">
-    ⚡ AVVIA MULTI-SCANSIONE CONTINUA
-  </button>
+  <button id="btn-toggle-stream" class="btn-turbo" style="width:100%;font-size:1rem;padding:14px">⚡ AVVIA MULTI-SCANSIONE CONTINUA</button>
+  <div class="row">
+    <button id="btn-burst" class="btn-secondary" style="flex:1">📸 SCATTO A RAFFICA</button>
+    <button id="btn-process" style="flex:1">🔎 Riconosci foto</button>
+  </div>
 
   <div id="camera-wrapper" hidden>
     <video id="video-preview" autoplay playsinline muted></video>
-    <div id="camera-overlay">
-      <div id="target-box"></div>
-    </div>
+    <div id="camera-overlay"><div id="target-box"></div></div>
+    <div id="flash"></div>
   </div>
 
-  <p id="status-message" style="margin-top:10px; font-size:0.85rem; color:var(--text-muted)">
-    Scansiona in sequenza rapida oppure inserisci i dati manualmente sotto.
+  <p id="status-message" style="margin-top:10px;font-size:.85rem;color:var(--text-muted)">
+    Scansiona in sequenza rapida, scatta a raffica oppure inserisci i dati manualmente sotto.
   </p>
 
   <div class="row">
     <input id="input-manual-name" placeholder="Nome (es. Charizard, opzionale)">
     <input id="input-manual-num" placeholder="Numero es. 025/165">
-    <button id="btn-manual-search" class="btn-secondary" style="min-width: 90px">Cerca</button>
+    <button id="btn-manual-search" class="btn-secondary" style="min-width:90px">Cerca</button>
   </div>
 
   <div id="preview-feed" class="scan-feed"></div>
 </div>
 
 <div class="stats-grid">
-  <div class="stat-card">
-    <div id="stat-count" class="stat-value">0</div>
-    <div class="stat-label">Carte Salvate</div>
-  </div>
-  <div class="stat-card">
-    <div id="stat-market-value" class="stat-value">0.00 €</div>
-    <div class="stat-label">Valore di Mercato</div>
-  </div>
-  <div class="stat-card">
-    <div id="stat-sale-total" class="stat-value" style="color:var(--color-success)">0.00 €</div>
-    <div class="stat-label">Incasso Previsto</div>
-  </div>
+  <div class="stat-card"><div id="stat-count" class="stat-value">0</div><div class="stat-label">Carte Salvate</div></div>
+  <div class="stat-card"><div id="stat-market-value" class="stat-value">0.00 €</div><div class="stat-label">Valore di Mercato</div></div>
+  <div class="stat-card"><div id="stat-sale-total" class="stat-value" style="color:var(--color-success)">0.00 €</div><div class="stat-label">Incasso Previsto</div></div>
 </div>
 
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 12px">
-  <h2 style="font-size: 1.1rem; margin:0">Registro Collezione</h2>
-  <input id="search-filter" placeholder="Filtra collezione..." style="padding:6px 10px; font-size:0.8rem; width:160px">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+  <h2 style="font-size:1.1rem;margin:0">Registro Collezione</h2>
+  <input id="search-filter" placeholder="Filtra collezione..." style="padding:6px 10px;font-size:.8rem;width:160px">
 </div>
 
 <table>
-  <thead>
-    <tr>
-      <th>Carta</th>
-      <th>Condizione</th>
-      <th>Mercato (€)</th>
-      <th>Mio Prezzo (€)</th>
-      <th></th>
-    </tr>
-  </thead>
+  <thead><tr><th>Carta</th><th>Condizione</th><th>Mercato (€)</th><th>Mio Prezzo (€)</th><th></th></tr></thead>
   <tbody id="collection-list-body"></tbody>
 </table>
 
-<div style="display:flex; gap:10px; margin-top:20px">
+<div style="display:flex;gap:10px;margin-top:20px">
   <button id="btn-export-csv">Esporta CSV</button>
   <button id="btn-print-pdf">Stampa PDF</button>
-  <button id="btn-clear-all" style="margin-left:auto; border-color:var(--color-danger); color:var(--color-danger)">Svuota Lista</button>
+  <button id="btn-clear-all" style="margin-left:auto;border-color:var(--color-danger);color:var(--color-danger)">Svuota Lista</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js"></script>
-
 <script>
 const getEl = id => document.getElementById(id);
 const formatEuro = val => (val == null || isNaN(val)) ? '—' : Number(val).toFixed(2) + ' €';
 
 let collectionList = [];
-
-try {
-  collectionList = JSON.parse(localStorage.getItem('pokevault_ultimate_db') || '[]');
-} catch (e) {
-  console.warn("Impossibile caricare i dati", e);
-}
+try { collectionList = JSON.parse(localStorage.getItem('pokevault_ultimate_db') || '[]'); } catch (e) { console.warn("Impossibile caricare i dati", e); }
 
 const saveAndRefreshList = () => {
-  try {
-    localStorage.setItem('pokevault_ultimate_db', JSON.stringify(collectionList));
-  } catch (e) {
-    console.error("Errore salvataggio", e);
-  }
+  try { localStorage.setItem('pokevault_ultimate_db', JSON.stringify(collectionList)); } catch (e) { console.error("Errore salvataggio", e); }
   renderCollectionTable();
 };
+
+/* --- Archivio foto (IndexedDB: leggero e capiente, funziona su Android e iPhone) --- */
+const dbp = new Promise((res, rej) => {
+  const r = indexedDB.open('pokevault', 1);
+  r.onupgradeneeded = () => r.result.createObjectStore('photos', { keyPath: 'id' });
+  r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+});
+const tx = async (mode, fn) => {
+  const db = await dbp;
+  return new Promise((res, rej) => {
+    const t = db.transaction('photos', mode), q = fn(t.objectStore('photos'));
+    t.oncomplete = () => res(q && q.result); t.onerror = () => rej(t.error);
+  });
+};
+const putPhoto = p => tx('readwrite', s => s.put(p));
+const getPhoto = id => tx('readonly', s => s.get(id));
+const delPhoto = id => tx('readwrite', s => s.delete(id));
+const clrPhotos = () => tx('readwrite', s => s.clear());
+const urlCache = {};
+async function photoURL(id) {
+  if (urlCache[id]) return urlCache[id];
+  const p = await getPhoto(id);
+  return p ? (urlCache[id] = URL.createObjectURL(p.blob)) : null;
+}
+// foto scattate ma non ancora riconosciute
+let pending = [];
+try { pending = JSON.parse(localStorage.getItem('pokevault_pending') || '[]'); } catch (e) {}
+function savePending() {
+  try { localStorage.setItem('pokevault_pending', JSON.stringify(pending)); } catch (e) {}
+  getEl('btn-process').textContent = pending.length ? `🔎 Riconosci ${pending.length} foto` : '🔎 Riconosci foto';
+}
 
 /* --- Feedback Audio --- */
 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
 function playSuccessBeep() {
   try {
-    const osc = audioContext.createOscillator();
-    const gain = audioContext.createGain();
+    const osc = audioContext.createOscillator(), gain = audioContext.createGain();
     osc.connect(gain); gain.connect(audioContext.destination);
     osc.frequency.value = 880; gain.gain.value = 0.1;
     osc.start(); osc.stop(audioContext.currentTime + 0.12);
@@ -227,61 +155,39 @@ let tesseractWorker = null;
 async function getOCRWorker() {
   if (!tesseractWorker) {
     tesseractWorker = await Tesseract.createWorker('eng');
-    await tesseractWorker.setParameters({
-      tessedit_char_whitelist: '0123456789/',
-      tessedit_pageseg_mode: Tesseract.PSM.SINGLE_LINE
-    });
+    await tesseractWorker.setParameters({ tessedit_char_whitelist: '0123456789/', tessedit_pageseg_mode: Tesseract.PSM.SINGLE_LINE });
   }
   return tesseractWorker;
 }
 
 function applyOtsuThresholding(context, width, height) {
-  const imgData = context.getImageData(0, 0, width, height);
-  const data = imgData.data;
+  const imgData = context.getImageData(0, 0, width, height), data = imgData.data;
   const histogram = new Array(256).fill(0);
-
   for (let i = 0; i < data.length; i += 4) {
     const gray = Math.round(0.299 * data[i] + 0.587 * data[i+1] + 0.114 * data[i+2]);
-    data[i] = data[i+1] = data[i+2] = gray;
-    histogram[gray]++;
+    data[i] = data[i+1] = data[i+2] = gray; histogram[gray]++;
   }
-
   let sum = 0;
   for (let t = 0; t < 256; t++) sum += t * histogram[t];
-
-  let sumBackground = 0, weightBackground = 0, weightForeground = 0;
-  let maxVariance = 0, optimalThreshold = 128, totalPixels = width * height;
-
+  let sumBackground = 0, weightBackground = 0, weightForeground = 0, maxVariance = 0, optimalThreshold = 128, totalPixels = width * height;
   for (let t = 0; t < 256; t++) {
     weightBackground += histogram[t];
     if (weightBackground === 0) continue;
     weightForeground = totalPixels - weightBackground;
     if (weightForeground === 0) break;
-
     sumBackground += t * histogram[t];
-    const meanBackground = sumBackground / weightBackground;
-    const meanForeground = (sum - sumBackground) / weightForeground;
-
-    const betweenClassVariance = weightBackground * weightForeground * Math.pow(meanBackground - meanForeground, 2);
-    if (betweenClassVariance > maxVariance) {
-      maxVariance = betweenClassVariance;
-      optimalThreshold = t;
-    }
+    const meanBackground = sumBackground / weightBackground, meanForeground = (sum - sumBackground) / weightForeground;
+    const v = weightBackground * weightForeground * Math.pow(meanBackground - meanForeground, 2);
+    if (v > maxVariance) { maxVariance = v; optimalThreshold = t; }
   }
-
-  for (let i = 0; i < data.length; i += 4) {
-    const binaryValue = data[i] >= optimalThreshold ? 255 : 0;
-    data[i] = data[i+1] = data[i+2] = binaryValue;
-  }
+  for (let i = 0; i < data.length; i += 4) { const b = data[i] >= optimalThreshold ? 255 : 0; data[i] = data[i+1] = data[i+2] = b; }
   context.putImageData(imgData, 0, 0);
 }
 
 function cropLowerCardRegion(videoSource, sourceWidth, sourceHeight) {
-  const cropHeight = sourceHeight * 0.28;
-  const cropWidth = sourceWidth * 0.9;
+  const cropHeight = sourceHeight * 0.28, cropWidth = sourceWidth * 0.9;
   const canvas = document.createElement('canvas');
-  canvas.width = Math.round(cropWidth);
-  canvas.height = Math.round(cropHeight);
+  canvas.width = Math.round(cropWidth); canvas.height = Math.round(cropHeight);
   const ctx = canvas.getContext('2d', { willReadFrequently: true });
   ctx.drawImage(videoSource, sourceWidth * 0.05, sourceHeight * 0.70, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
   applyOtsuThresholding(ctx, canvas.width, canvas.height);
@@ -290,41 +196,26 @@ function cropLowerCardRegion(videoSource, sourceWidth, sourceHeight) {
 
 async function scanCardNumber(videoSource, sourceWidth, sourceHeight) {
   const worker = await getOCRWorker();
-  const processedCanvas = cropLowerCardRegion(videoSource, sourceWidth, sourceHeight);
-  const recognitionResult = await worker.recognize(processedCanvas);
-  const cleanText = recognitionResult.data.text.replace(/\s+/g, '');
-  const match = cleanText.match(/(\d{1,3})\/(\d{2,3})/);
+  const r = await worker.recognize(cropLowerCardRegion(videoSource, sourceWidth, sourceHeight));
+  const match = r.data.text.replace(/\s+/g, '').match(/(\d{1,3})\/(\d{2,3})/);
   return match ? `${match[1]}/${match[2]}` : '';
 }
 
 /* --- TCGdex API Integration --- */
 let cachedSetDatabase = null;
 async function fetchJSONData(url) {
-  try {
-    const response = await fetch(url);
-    return response.ok ? await response.json() : null;
-  } catch (e) { return null; }
+  try { const response = await fetch(url); return response.ok ? await response.json() : null; } catch (e) { return null; }
 }
 
-async function searchAndAddCard(cardNumberString, cardNameString = '') {
+async function searchAndAddCard(cardNumberString, cardNameString = '', photoId = null) {
   const API_BASE_URL = 'https://api.tcgdex.net/v2/en/';
   const match = cardNumberString ? cardNumberString.match(/(\d+)\/(\d+)/) : null;
-
   try {
     let cardDetails = null;
-
     if (match) {
-      const cardLocalNumber = +match[1];
-      const setTotalCount = +match[2];
-
-      if (!cachedSetDatabase) {
-        cachedSetDatabase = await fetchJSONData(API_BASE_URL + 'sets') || [];
-      }
-
-      const matchingSets = cachedSetDatabase.filter(set => 
-        set.cardCount && (set.cardCount.official === setTotalCount || set.cardCount.total === setTotalCount)
-      );
-
+      const cardLocalNumber = +match[1], setTotalCount = +match[2];
+      if (!cachedSetDatabase) cachedSetDatabase = await fetchJSONData(API_BASE_URL + 'sets') || [];
+      const matchingSets = cachedSetDatabase.filter(set => set.cardCount && (set.cardCount.official === setTotalCount || set.cardCount.total === setTotalCount));
       for (const setItem of matchingSets) {
         for (const formattedId of [String(cardLocalNumber).padStart(3, '0'), String(cardLocalNumber)]) {
           cardDetails = await fetchJSONData(API_BASE_URL + 'cards/' + setItem.id + '-' + formattedId);
@@ -334,51 +225,32 @@ async function searchAndAddCard(cardNumberString, cardNameString = '') {
       }
     } else if (cardNameString) {
       const searchResults = await fetchJSONData(API_BASE_URL + 'cards?name=' + encodeURIComponent(cardNameString) + '&pagination:page=1&pagination:itemsPerPage=1');
-      if (searchResults && searchResults.length > 0) {
-        cardDetails = await fetchJSONData(API_BASE_URL + 'cards/' + searchResults[0].id);
-      }
+      if (searchResults && searchResults.length > 0) cardDetails = await fetchJSONData(API_BASE_URL + 'cards/' + searchResults[0].id);
     }
-
     if (cardDetails) {
       const pricingInfo = (cardDetails.pricing && cardDetails.pricing.cardmarket) || {};
       const marketPrice = pricingInfo.trend ?? pricingInfo['trend-holo'] ?? 0;
       const officialTotal = cardDetails.set && cardDetails.set.cardCount ? cardDetails.set.cardCount.official : '—';
-
-      collectionList.push({
-        name: cardDetails.name,
-        set: cardDetails.set ? cardDetails.set.name : '',
-        num: cardDetails.localId + '/' + officialTotal,
-        cond: 'NM',
-        mkt: marketPrice,
-        val: marketPrice
-      });
-
+      collectionList.push({ name: cardDetails.name, set: cardDetails.set ? cardDetails.set.name : '', num: cardDetails.localId + '/' + officialTotal, cond: 'NM', mkt: marketPrice, val: marketPrice, photo: photoId });
       saveAndRefreshList();
-
-      if (cardDetails.image) {
+      if (cardDetails.image && !photoId) {
         const previewImg = document.createElement('img');
         previewImg.src = cardDetails.image + '/low.webp';
         getEl('preview-feed').prepend(previewImg);
       }
-      
       getEl('status-message').textContent = `✅ Aggiunta: ${cardDetails.name} (${cardDetails.localId}/${officialTotal})`;
       return true;
-    } else {
-      getEl('status-message').textContent = `❌ Nessuna carta trovata con i parametri inseriti.`;
-      return false;
     }
+    getEl('status-message').textContent = `❌ Nessuna carta trovata con i parametri inseriti.`;
+    return false;
   } catch (err) {
     getEl('status-message').textContent = `⚠️ Errore di ricerca: ${err.message}`;
     return false;
   }
 }
 
-/* --- Camera Streaming Loop --- */
-let mediaStream = null;
-let scanIntervalTimer = 0;
-let isProcessingFrame = false;
-let lastDetectedCode = '';
-let lastDetectionTimestamp = 0;
+/* --- Scansione continua (OCR dal vivo) --- */
+let mediaStream = null, scanIntervalTimer = 0, isProcessingFrame = false, lastDetectedCode = '', lastDetectionTimestamp = 0;
 
 function stopContinuousScan() {
   clearInterval(scanIntervalTimer);
@@ -391,47 +263,34 @@ function stopContinuousScan() {
 }
 
 getEl('btn-toggle-stream').onclick = async () => {
+  audioContext.resume && audioContext.resume();
   if (mediaStream) { stopContinuousScan(); return; }
-
+  if (bStream) stopBurst();
   try {
-    mediaStream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: 'environment', width: { ideal: 1280 } }
-    });
-  } catch (err) {
-    alert('Impossibile accedere alla fotocamera: ' + err.message);
-    return;
-  }
-
+    mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 } } });
+  } catch (err) { alert('Impossibile accedere alla fotocamera: ' + err.message); return; }
   const videoElement = getEl('video-preview');
   getEl('camera-wrapper').hidden = false;
   getEl('camera-wrapper').classList.add('is-scanning');
   getEl('btn-toggle-stream').textContent = '⏹ FERMA SCANSIONE';
   getEl('btn-toggle-stream').className = 'btn-primary';
-
   videoElement.srcObject = mediaStream;
   await videoElement.play();
-
   getEl('status-message').textContent = '🔥 Scansione attiva: passa le carte una dietro l\'altra!';
   await getOCRWorker();
-
   scanIntervalTimer = setInterval(async () => {
     if (isProcessingFrame || !mediaStream || !videoElement.videoWidth) return;
     isProcessingFrame = true;
     try {
       const detectedCode = await scanCardNumber(videoElement, videoElement.videoWidth, videoElement.videoHeight);
-      const nowTimestamp = Date.now();
-
-      if (detectedCode && (detectedCode !== lastDetectedCode || (nowTimestamp - lastDetectionTimestamp) > 2500)) {
-        lastDetectedCode = detectedCode;
-        lastDetectionTimestamp = nowTimestamp;
-
+      const now = Date.now();
+      if (detectedCode && (detectedCode !== lastDetectedCode || (now - lastDetectionTimestamp) > 2500)) {
+        lastDetectedCode = detectedCode; lastDetectionTimestamp = now;
         playSuccessBeep();
         if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
-
         const targetBox = getEl('target-box');
         targetBox.classList.add('read-success');
         setTimeout(() => targetBox.classList.remove('read-success'), 300);
-
         getEl('status-message').textContent = `⚡ Trovato ${detectedCode}! Inserito nel registro.`;
         searchAndAddCard(detectedCode, '');
       }
@@ -440,84 +299,145 @@ getEl('btn-toggle-stream').onclick = async () => {
   }, 400);
 };
 
+/* --- Scatto a raffica: foto automatiche quando la carta è ferma e cambia --- */
+let bStream = null, bTimer = 0, shooting = false, prevSig = null, lastSig = null, still = 0, shots = 0;
+const sigCanvas = document.createElement('canvas'); sigCanvas.width = sigCanvas.height = 48;
+const sigCtx = sigCanvas.getContext('2d', { willReadFrequently: true });
+function frameSig(v) {
+  sigCtx.drawImage(v, 0, 0, 48, 48);
+  const d = sigCtx.getImageData(0, 0, 48, 48).data, a = [];
+  for (let i = 0; i < d.length; i += 4) a.push(d[i] * .3 + d[i+1] * .59 + d[i+2] * .11);
+  return a;
+}
+const sigDiff = (a, b) => { if (!a || !b) return 999; let s = 0; for (let i = 0; i < a.length; i++) s += Math.abs(a[i] - b[i]); return s / a.length; };
+const sigSpread = a => { const m = a.reduce((x, y) => x + y, 0) / a.length; return Math.sqrt(a.reduce((x, y) => x + (y - m) ** 2, 0) / a.length); };
+
+async function shoot(v) {
+  if (shooting || !v.videoWidth) return;
+  shooting = true;
+  try {
+    const w = Math.min(1280, v.videoWidth), h = Math.round(v.videoHeight * w / v.videoWidth);
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    c.getContext('2d').drawImage(v, 0, 0, w, h);
+    const blob = await new Promise(r => c.toBlob(r, 'image/jpeg', 0.82));
+    const id = Date.now() + '-' + Math.random().toString(36).slice(2, 6);
+    await putPhoto({ id, blob });
+    pending.push(id); savePending(); shots++;
+    const img = document.createElement('img'); img.src = await photoURL(id);
+    getEl('preview-feed').prepend(img);
+    const f = getEl('flash'); f.style.opacity = .7; setTimeout(() => f.style.opacity = 0, 120);
+    playSuccessBeep(); if (navigator.vibrate) navigator.vibrate(50);
+    getEl('status-message').textContent = `📸 ${shots} foto scattate (${pending.length} da riconoscere). Cambia carta!`;
+  } catch (e) { getEl('status-message').textContent = '⚠️ Salvataggio foto fallito: ' + e.message; }
+  shooting = false;
+}
+
+function stopBurst() {
+  clearInterval(bTimer);
+  if (bStream) bStream.getTracks().forEach(t => t.stop());
+  bStream = null; prevSig = lastSig = null; still = 0;
+  getEl('camera-wrapper').hidden = true; getEl('camera-wrapper').classList.remove('is-scanning');
+  getEl('btn-burst').textContent = '📸 SCATTO A RAFFICA';
+}
+
+getEl('btn-burst').onclick = async () => {
+  audioContext.resume && audioContext.resume();
+  if (bStream) { stopBurst(); return; }
+  if (mediaStream) stopContinuousScan();
+  try {
+    bStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1920 } } });
+  } catch (err) { alert('Impossibile accedere alla fotocamera: ' + err.message); return; }
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {}
+  const v = getEl('video-preview');
+  getEl('camera-wrapper').hidden = false; getEl('camera-wrapper').classList.add('is-scanning');
+  getEl('btn-burst').textContent = '⏹ FERMA RAFFICA';
+  v.srcObject = bStream; v.muted = true;
+  try { await v.play(); } catch (e) {}
+  v.onclick = () => shoot(v); // tocca lo schermo per scattare a mano
+  getEl('status-message').textContent = '📸 Tieni ferma ogni carta un istante: scatto da solo. Puoi anche toccare il video.';
+  bTimer = setInterval(() => {
+    if (!bStream || !v.videoWidth || shooting) return;
+    const s = frameSig(v), moving = sigDiff(s, prevSig) >= 4; prevSig = s;
+    if (moving) { still = 0; return; }
+    if (++still === 3) {
+      const ok = sigSpread(s) > 25 && sigDiff(s, lastSig) > 12;
+      lastSig = s;
+      if (ok) shoot(v);
+    }
+  }, 250);
+};
+
+/* --- Riconoscimento delle foto in coda --- */
+getEl('btn-process').onclick = async () => {
+  if (!pending.length) { getEl('status-message').textContent = 'Nessuna foto in coda.'; return; }
+  if (bStream) stopBurst();
+  const queue = [...pending]; let ok = 0, ko = 0;
+  for (const id of queue) {
+    getEl('status-message').textContent = `🔎 Riconosco ${ok + ko + 1}/${queue.length}…`;
+    try {
+      const p = await getPhoto(id);
+      if (!p) { pending = pending.filter(x => x !== id); continue; }
+      const bmp = await createImageBitmap(p.blob);
+      const code = await scanCardNumber(bmp, bmp.width, bmp.height);
+      if (code && await searchAndAddCard(code, '', id)) { pending = pending.filter(x => x !== id); ok++; } else ko++;
+    } catch (e) { ko++; }
+    savePending();
+  }
+  getEl('status-message').textContent = `Fatto: ${ok} riconosciute, ${ko} non lette (restano in coda: riprova o inserisci il numero a mano).`;
+};
+
 getEl('btn-manual-search').onclick = () => {
-  const manualName = getEl('input-manual-name').value.trim();
-  const manualNum = getEl('input-manual-num').value.trim();
+  const manualName = getEl('input-manual-name').value.trim(), manualNum = getEl('input-manual-num').value.trim();
   if (!manualName && !manualNum) { alert('Inserisci un numero o un nome.'); return; }
   searchAndAddCard(manualNum, manualName);
-  getEl('input-manual-num').value = '';
-  getEl('input-manual-name').value = '';
+  getEl('input-manual-num').value = ''; getEl('input-manual-name').value = '';
 };
 
 /* --- Rendering Table con Filtro --- */
 function renderCollectionTable() {
   const tableBody = getEl('collection-list-body');
   tableBody.innerHTML = '';
-  
-  let totalMarketValue = 0;
-  let totalSalesValue = 0;
+  let totalMarketValue = 0, totalSalesValue = 0;
   const filterQuery = getEl('search-filter').value.toLowerCase().trim();
-
   collectionList.forEach((cardItem, index) => {
     totalMarketValue += (cardItem.mkt || 0);
     totalSalesValue += (cardItem.val || 0);
-
-    // Filtra in base alla ricerca testuale
-    if (filterQuery && !cardItem.name.toLowerCase().includes(filterQuery) && !cardItem.set.toLowerCase().includes(filterQuery)) {
-      return;
-    }
-
+    if (filterQuery && !cardItem.name.toLowerCase().includes(filterQuery) && !cardItem.set.toLowerCase().includes(filterQuery)) return;
     const row = document.createElement('tr');
     row.innerHTML = `
-      <td>
-        <b>${cardItem.name}</b><br>
-        <span class="badge">${cardItem.set} ${cardItem.num}</span>
-      </td>
-      <td>
-        <select style="background:transparent">
-          ${['NM','EX','GD','PL','PO'].map(cond => `<option ${cond === cardItem.cond ? 'selected' : ''} style="background:#111827">${cond}</option>`).join('')}
-        </select>
-      </td>
+      <td>${cardItem.photo ? '<img class="th" alt="">' : ''}<b>${cardItem.name}</b><br><span class="badge">${cardItem.set} ${cardItem.num}</span></td>
+      <td><select style="background:transparent">${['NM','EX','GD','PL','PO'].map(cond => `<option ${cond === cardItem.cond ? 'selected' : ''} style="background:#111827">${cond}</option>`).join('')}</select></td>
       <td><input type="number" step="0.5" class="input-mkt" value="${cardItem.mkt ?? ''}" style="background:transparent"></td>
       <td><input type="number" step="0.5" class="input-val" value="${cardItem.val ?? ''}" style="background:transparent"></td>
-      <td><button class="btn-delete" style="border:none; background:transparent; color:var(--color-danger)">✕</button></td>
-    `;
-
-    row.querySelector('select').onchange = (e) => { cardItem.cond = e.target.value; saveAndRefreshList(); };
-    row.querySelector('.input-mkt').onchange = (e) => { cardItem.mkt = e.target.value === '' ? 0 : Number(e.target.value); saveAndRefreshList(); };
-    row.querySelector('.input-val').onchange = (e) => { cardItem.val = e.target.value === '' ? null : Number(e.target.value); saveAndRefreshList(); };
-    row.querySelector('.btn-delete').onclick = () => { collectionList.splice(index, 1); saveAndRefreshList(); };
-
+      <td><button class="btn-delete" style="border:none;background:transparent;color:var(--color-danger)">✕</button></td>`;
+    const th = row.querySelector('.th');
+    if (th) photoURL(cardItem.photo).then(u => { if (u) th.src = u; });
+    row.querySelector('select').onchange = e => { cardItem.cond = e.target.value; saveAndRefreshList(); };
+    row.querySelector('.input-mkt').onchange = e => { cardItem.mkt = e.target.value === '' ? 0 : Number(e.target.value); saveAndRefreshList(); };
+    row.querySelector('.input-val').onchange = e => { cardItem.val = e.target.value === '' ? null : Number(e.target.value); saveAndRefreshList(); };
+    row.querySelector('.btn-delete').onclick = () => { if (cardItem.photo) delPhoto(cardItem.photo); collectionList.splice(index, 1); saveAndRefreshList(); };
     tableBody.append(row);
   });
-
   getEl('stat-count').textContent = collectionList.length;
   getEl('stat-market-value').textContent = formatEuro(totalMarketValue);
   getEl('stat-sale-total').textContent = formatEuro(totalSalesValue);
 }
-
 getEl('search-filter').oninput = renderCollectionTable;
 
 /* --- Export & Data Actions --- */
 getEl('btn-export-csv').onclick = () => {
-  const rows = [
-    ['Nome Carta', 'Set', 'Numero', 'Condizione', 'Prezzo Mercato', 'Prezzo Vendita'],
-    ...collectionList.map(c => [c.name, c.set, c.num, c.cond, c.mkt ?? '', c.val ?? ''])
-  ];
-  const csvContent = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(';')).join('\n');
-  const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Collezione_PokeVault.csv'; a.click();
+  const rows = [['Nome Carta','Set','Numero','Condizione','Prezzo Mercato','Prezzo Vendita'], ...collectionList.map(c => [c.name, c.set, c.num, c.cond, c.mkt ?? '', c.val ?? ''])];
+  const csv = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(';')).join('\n');
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' })); a.download = 'Collezione_PokeVault.csv'; a.click();
 };
-
 getEl('btn-print-pdf').onclick = () => window.print();
-
 getEl('btn-clear-all').onclick = () => {
-  if (confirm('Vuoi davvero cancellare l\'intera collezione salvata nel dispositivo?')) {
-    collectionList = [];
-    saveAndRefreshList();
+  if (confirm('Vuoi davvero cancellare l\'intera collezione e tutte le foto salvate nel dispositivo?')) {
+    collectionList = []; pending = []; clrPhotos(); savePending(); saveAndRefreshList();
   }
 };
 
+savePending();
 renderCollectionTable();
 </script>
 </body>
